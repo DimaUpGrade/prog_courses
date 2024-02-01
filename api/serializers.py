@@ -1,6 +1,33 @@
 from rest_framework import serializers
 from .models import Course, UserCourse, Comment, Review, Platform, Author, Tag
+from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.models import User
+from rest_framework.authtoken.models import Token
+from django.core.exceptions import ValidationError
+
+
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = '__all__'
+
+    def create(self, validated_data):
+        user_obj = User.objects.create_user(email=validated_data['email'], username=validated_data['username'],
+                                            password=validated_data['password'])
+        user_obj.save()
+        token = Token.objects.create(user=user_obj)
+        return user_obj
+
+
+class UserLoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField()
+
+    def check_user(self, validated_data):
+        user = authenticate(username=validated_data['username'], password=validated_data['password'])
+        if not user:
+            raise ValidationError('User not found.')
+        return user
 
 
 class TagSerializer(serializers.ModelSerializer):

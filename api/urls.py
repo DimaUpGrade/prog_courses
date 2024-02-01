@@ -10,4 +10,6 @@ router.register(r'comments', CommentViewSet, basename='comment')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('registration/', UserRegistration.as_view(), name='registration'),
+    path('login/', UserLogin.as_view(), name='login'),
 ]
