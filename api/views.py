@@ -21,3 +21,4 @@ class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.select_related('user', 'id_course')
     serializer_class = CommentSerializer
 
+
