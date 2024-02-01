@@ -18,7 +18,18 @@ class UserRegistration(APIView):
             user = serializer.create(request.data)
             if user:
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response({'Bad request': 'Invalid data...'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'Bad request': 'Invalid data'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class IsUsernameTaken(APIView):
+    permission_classes = [perms.AllowAny]
+    serializer_class = UsernameSerializer
+
+    def post(self, request):
+        serializer = UsernameSerializer(data=request.data)
+        if serializer.is_valid():
+            return Response({"Username is valid": "Username is valid"}, status=status.HTTP_200_OK)
+        return Response({"Username is taken": "Username is taken or something wrong"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserLogin(APIView):

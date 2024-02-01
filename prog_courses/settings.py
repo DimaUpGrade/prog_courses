@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -38,13 +39,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
     'api',
     'debug_toolbar',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -54,6 +58,22 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'prog_courses.urls'
+
+# Put here pythonanywhere server host link
+ALLOWED_HOSTS = ["localhost", "192.168.0.102", "127.0.0.1", "hoofeddragon417.pythonanywhere.com"]
+
+CORS_ALLOW_CREDENTIALS = True
+
+# Put here netlify client host link
+CORS_ORIGIN_WHITELIST = (
+    'http://localhost:8000', 'http://192.168.0.102:8000', 'http://127.0.0.1:8000'
+)
+
+# Put here netlify client host link
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000', 'http://192.168.0.102:8080', 'http://127.0.0.1:8000'
+]
+
 
 TEMPLATES = [
     {
@@ -121,6 +141,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+LOGIN_URL = '/login/'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
@@ -132,3 +154,12 @@ INTERNAL_IPS = [
     "127.0.0.1",
     # ...
 ]
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 100
+}

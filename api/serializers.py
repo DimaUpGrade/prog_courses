@@ -54,6 +54,12 @@ class UserCourseSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class UsernameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('username',)
+
+
 class UserPartialSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
