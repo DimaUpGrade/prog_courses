@@ -46,6 +46,7 @@ class Course(models.Model):
     link = models.URLField(max_length=400)
     verified = models.BooleanField()
     tags = models.ManyToManyField("Tag", related_name="course_tags")
+    # users = models.ForeignKey("UserCourse", related_name="course_users", on_delete=models.CASCADE)
     users = models.ManyToManyField("auth.User", related_name="course_users")
     # reviews = models.ManyToManyField("Review", related_name="course_reviews")
 

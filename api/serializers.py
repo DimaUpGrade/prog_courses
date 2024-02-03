@@ -89,7 +89,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class CourseSerializer(serializers.ModelSerializer):
-    users = UserCourseSerializer(many=True, read_only=True)
+    users = UserPartialSerializer(many=True, read_only=True)
     tags = TagSerializer(many=True, read_only=False)
     author = AuthorSerializer(many=False, read_only=False)
     platform = PlatformSerializer(many=False, read_only=False)

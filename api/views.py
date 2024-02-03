@@ -1,11 +1,33 @@
 from django.contrib.auth import login, logout
 from django.shortcuts import render, get_object_or_404, get_list_or_404
+from rest_framework.authtoken.models import Token
 import rest_framework.permissions as perms
 from rest_framework import generics, status, viewsets
-from .models import Course, UserCourse, Comment, Review, Platform, Author, Tag
-from .serializers import *
+from .models import (
+    Course, 
+    UserCourse, 
+    Comment, 
+    Review, 
+    Platform, 
+    Author, 
+    Tag
+)
+from .serializers import (
+    UserRegistrationSerializer, 
+    UsernameSerializer,
+    UserLoginSerializer,
+    CourseSerializer,
+    ReviewSerializer,
+    CommentSerializer
+)
 from rest_framework.views import APIView
 from rest_framework.response import Response
+
+# from rest_framework_filters import filters as filters
+from django_filters.rest_framework import DjangoFilterBackend
+
+from .service import CourseTagsFilter
+
 
 
 class UserRegistration(APIView):
@@ -53,6 +75,20 @@ class UserLogout(APIView):
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.select_related('platform', 'author', 'publisher').prefetch_related('tags', 'users', 'reviews', 'reviews__user', 'comments', 'comments__user')
     serializer_class = CourseSerializer
+    filter_backends = (DjangoFilterBackend, )
+    filterset_class = CourseTagsFilter
+
+    # filter_backends = (filters.DjangoFilterBackend,)
+    # filterset_fields = ('tags__name')
+
+    # # Example of overriding queryset method 
+    # def get_queryset(self):
+    #     pk = self.kwargs.get("pk")
+
+    #     if not pk:
+    #         return Course.objects.all()
+        
+    #     return Course.objects.filter(pk=pk)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
