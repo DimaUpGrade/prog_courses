@@ -89,14 +89,14 @@ class CourseViewSet(viewsets.ModelViewSet):
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
-    queryset = Review.objects.select_related('user', 'id_course')
+    queryset = Review.objects.select_related('user', 'id_course').order_by('-likes')
     serializer_class = ReviewSerializer
     filter_backends = (DjangoFilterBackend, )
     filterset_class = ReviewsCourseFilter
 
 
 class CommentViewSet(viewsets.ModelViewSet):
-    queryset = Comment.objects.select_related('user', 'id_course')
+    queryset = Comment.objects.select_related('user', 'id_course').order_by('-likes')
     serializer_class = CommentSerializer
     filter_backends = (DjangoFilterBackend, )
     filterset_class = CommentsCourseFilter

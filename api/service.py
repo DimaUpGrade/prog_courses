@@ -36,3 +36,6 @@ class CommentsCourseFilter(filters.FilterSet):
     class Meta:
         model = Comment
         fields = ['id_course']
+
+
+
