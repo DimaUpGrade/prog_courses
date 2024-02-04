@@ -1,5 +1,6 @@
 from django.db import models
 
+
 #
 # Default Django User model (i.e. auth.models.User class)
 # has atributes:
@@ -11,6 +12,7 @@ from django.db import models
 # date_joined
 # last_login
 #
+
 
 class Author(models.Model):
     # Author's username in sourse of courses
@@ -35,7 +37,6 @@ class Tag(models.Model):
     def __str__(self):
         return self.title
 
-    
 
 class Course(models.Model):
     title = models.CharField(max_length=70)
@@ -79,6 +80,3 @@ class Comment(models.Model):
 
     def __str__(self):
         return self.commentary_text
-
-
-

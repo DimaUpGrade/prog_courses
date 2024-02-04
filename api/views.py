@@ -73,7 +73,7 @@ class UserLogout(APIView):
 
 
 class CourseViewSet(viewsets.ModelViewSet):
-    queryset = Course.objects.select_related('platform', 'author', 'publisher').prefetch_related('tags', 'users', 'reviews', 'reviews__user', 'comments', 'comments__user')
+    queryset = Course.objects.select_related('platform', 'author', 'publisher').prefetch_related('tags', 'users')
     serializer_class = CourseSerializer
     filter_backends = (DjangoFilterBackend, )
     filterset_class = CourseTagsFilter

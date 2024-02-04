@@ -94,8 +94,8 @@ class CourseSerializer(serializers.ModelSerializer):
     author = AuthorSerializer(many=False, read_only=False)
     platform = PlatformSerializer(many=False, read_only=False)
     publisher = UserPartialSerializer(many=False, read_only=False)
-    reviews = ReviewSerializer(many=True, read_only=True)
-    comments = CommentSerializer(many=True, read_only=True)
+    # reviews = ReviewSerializer(many=True, read_only=True)
+    # comments = CommentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Course
@@ -103,4 +103,4 @@ class CourseSerializer(serializers.ModelSerializer):
         # Check this:
         # fields = '__all__'
         #
-        fields = ('id', 'title', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'users', 'reviews', 'comments')
+        fields = ('id', 'title', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'users')
