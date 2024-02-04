@@ -26,7 +26,7 @@ from rest_framework.response import Response
 # from rest_framework_filters import filters as filters
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .service import CourseTagsFilter
+from .service import CourseTagsFilter, ReviewsCourseFilter, CommentsCourseFilter
 
 
 
@@ -78,9 +78,6 @@ class CourseViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend, )
     filterset_class = CourseTagsFilter
 
-    # filter_backends = (filters.DjangoFilterBackend,)
-    # filterset_fields = ('tags__name')
-
     # # Example of overriding queryset method 
     # def get_queryset(self):
     #     pk = self.kwargs.get("pk")
@@ -94,10 +91,14 @@ class CourseViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.select_related('user', 'id_course')
     serializer_class = ReviewSerializer
+    filter_backends = (DjangoFilterBackend, )
+    filterset_class = ReviewsCourseFilter
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.select_related('user', 'id_course')
     serializer_class = CommentSerializer
+    filter_backends = (DjangoFilterBackend, )
+    filterset_class = CommentsCourseFilter
 
 

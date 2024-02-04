@@ -61,6 +61,7 @@ class Review(models.Model):
     rating = models.IntegerField()
     text_review = models.TextField(null=True, blank=True)
     creation_date = models.DateTimeField(auto_now_add=True)
+    likes = models.IntegerField(default=0)
 
     def __str__(self):
         return self.text_review

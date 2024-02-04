@@ -5,6 +5,9 @@ from .models import *
 class CharFieldInFilter(filters.BaseInFilter, filters.CharFilter):
     pass
 
+class NumberFieldInFilter(filters.BaseInFilter, filters.NumberFilter):
+    pass
+
 # Multiple values in the same parameter can made by writing it twice
 #
 # For example, it works (!):
@@ -17,3 +20,19 @@ class CourseTagsFilter(filters.FilterSet):
     class Meta:
         model = Course
         fields = ['tags', 'platform']
+
+
+class ReviewsCourseFilter(filters.FilterSet):
+    id_course = NumberFieldInFilter(field_name="id_course", lookup_expr='in')
+
+    class Meta:
+        model = Review
+        fields = ['id_course']
+
+
+class CommentsCourseFilter(filters.FilterSet):
+    id_course = NumberFieldInFilter(field_name="id_course", lookup_expr='in')
+
+    class Meta:
+        model = Comment
+        fields = ['id_course']
