@@ -68,6 +68,8 @@ class Review(models.Model):
     
 
 class UserCourse(models.Model):
+    # Затестить
+    # user = models.OneToOne("auth.User", related_name="user_courses", on_delete=models.CASCADE)
     user = models.ForeignKey("auth.User", related_name="user_courses", on_delete=models.CASCADE)
     courses = models.ManyToManyField("Course", related_name="course_users_1")
 

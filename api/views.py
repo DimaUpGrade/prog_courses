@@ -18,14 +18,14 @@ from .serializers import (
     UserLoginSerializer,
     CourseSerializer,
     ReviewSerializer,
-    CommentSerializer
+    CommentSerializer,
+    UserFullSerializer
 )
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
 # from rest_framework_filters import filters as filters
 from django_filters.rest_framework import DjangoFilterBackend
-
 from .service import CourseTagsFilter, ReviewsCourseFilter, CommentsCourseFilter
 
 
@@ -64,6 +64,7 @@ class UserLogin(APIView):
             user = serializer.check_user(request.data)
             login(request, user)
             return Response({'Token': Token.objects.get_or_create(user=user)[0].key}, status=status.HTTP_200_OK)
+        return Response({"Error:": "Something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserLogout(APIView):
@@ -89,16 +90,28 @@ class CourseViewSet(viewsets.ModelViewSet):
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
-    queryset = Review.objects.select_related('user', 'id_course').order_by('-likes')
+    # не нужно id_course возвращать
+    # queryset = Review.objects.select_related('user', 'id_course').order_by('-likes')
+    queryset = Review.objects.select_related('user').order_by('-likes')
     serializer_class = ReviewSerializer
     filter_backends = (DjangoFilterBackend, )
     filterset_class = ReviewsCourseFilter
 
 
 class CommentViewSet(viewsets.ModelViewSet):
-    queryset = Comment.objects.select_related('user', 'id_course').order_by('-likes')
+    # не нужно id_course возвращать
+    # queryset = Comment.objects.select_related('user', 'id_course').order_by('-likes')
+    queryset = Comment.objects.select_related('user').order_by('-likes')
     serializer_class = CommentSerializer
     filter_backends = (DjangoFilterBackend, )
     filterset_class = CommentsCourseFilter
 
+
+class UserView(APIView):
+    permission_classes = [perms.IsAuthenticated]
+    serializer_class = UserFullSerializer
+
+    def get(self, request):
+        serializer = UserFullSerializer(request.user)
+        return Response({'user': serializer.data}, status=status.HTTP_200_OK)
 
