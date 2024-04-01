@@ -93,10 +93,6 @@ class CommentSerializer(serializers.ModelSerializer):
         return obj.likes.count()
 
 
-# class CommentLikesSerializer(serializers.ModelSerializer):
-#     likes = 
-
-
 class CourseSerializer(serializers.ModelSerializer):
     # users = UserPartialSerializer(many=True, read_only=True)
     tags = TagSerializer(many=True, read_only=False)
@@ -109,11 +105,6 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        #
-        # Check this:
-        # fields = '__all__'
-        #
-        # fields = ('id', 'title', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'users')
         fields = ('id', 'title', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'comments')
 
     def to_representation(self, instance):

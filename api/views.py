@@ -20,7 +20,7 @@ from .serializers import (
     CourseSerializer,
     ReviewSerializer,
     CommentSerializer,
-    UserFullSerializer
+    UserFullSerializer,
 )
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -97,6 +97,27 @@ class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     filter_backends = (DjangoFilterBackend, )
     filterset_class = ReviewsCourseFilter
+
+
+class CourseReviews(APIView):
+    queryset = Course.objects.all()
+
+    def get(self, request, *args, **kwargs):
+        course = Course.objects.get(id=self.kwargs["pk"])
+        reviews = course.reviews.all()
+        serializer = ReviewSerializer(reviews, many=True)
+        return Response(serializer.data)
+    
+
+class CourseComments(APIView):
+    queryset = Course.objects.all()
+
+    def get(self, request, *args, **kwargs):
+        course = Course.objects.get(id=self.kwargs["pk"])
+        comments = course.comments.all()
+        serializer = CommentSerializer(comments, many=True)
+        # print(serializer)
+        return Response(serializer.data)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
