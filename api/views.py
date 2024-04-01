@@ -2,6 +2,7 @@ from django.contrib.auth import login, logout
 from django.shortcuts import render, get_object_or_404, get_list_or_404
 from rest_framework.authtoken.models import Token
 import rest_framework.permissions as perms
+
 from rest_framework import generics, status, viewsets
 from .models import (
     Course, 
@@ -74,7 +75,7 @@ class UserLogout(APIView):
 
 
 class CourseViewSet(viewsets.ModelViewSet):
-    queryset = Course.objects.select_related('platform', 'author', 'publisher').prefetch_related('tags', 'users')
+    queryset = Course.objects.select_related('platform', 'author', 'publisher').prefetch_related('tags')
     serializer_class = CourseSerializer
     filter_backends = (DjangoFilterBackend, )
     filterset_class = CourseTagsFilter
@@ -101,7 +102,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     # не нужно id_course возвращать
     # queryset = Comment.objects.select_related('user', 'id_course').order_by('-likes')
-    queryset = Comment.objects.select_related('user').order_by('-likes')
+    queryset = Comment.objects.select_related('user')
     serializer_class = CommentSerializer
     filter_backends = (DjangoFilterBackend, )
     filterset_class = CommentsCourseFilter

@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from django.core.exceptions import ValidationError
+from django.db.models import Count
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -82,20 +83,29 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     user = UserPartialSerializer(many=False, read_only=True)
+    likes_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
-        fields = ('id', 'id_course', 'user', 'commentary_text', 'creation_date', 'likes')
+        fields = ('id', 'id_course', 'user', 'commentary_text', 'creation_date', 'likes_count')
+
+    def get_likes_count(self, obj):
+        return obj.likes.count()
+
+
+# class CommentLikesSerializer(serializers.ModelSerializer):
+#     likes = 
 
 
 class CourseSerializer(serializers.ModelSerializer):
-    users = UserPartialSerializer(many=True, read_only=True)
+    # users = UserPartialSerializer(many=True, read_only=True)
     tags = TagSerializer(many=True, read_only=False)
     author = AuthorSerializer(many=False, read_only=False)
     platform = PlatformSerializer(many=False, read_only=False)
     publisher = UserPartialSerializer(many=False, read_only=False)
     # reviews = ReviewSerializer(many=True, read_only=True)
-    # comments = CommentSerializer(many=True, read_only=True)
+    # comments = serializers.SerializerMethodField()
+    comments = CommentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Course
@@ -103,4 +113,15 @@ class CourseSerializer(serializers.ModelSerializer):
         # Check this:
         # fields = '__all__'
         #
-        fields = ('id', 'title', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'users')
+        # fields = ('id', 'title', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'users')
+        fields = ('id', 'title', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'comments')
+
+    def to_representation(self, instance):
+        response = super().to_representation(instance)
+        response["comments"] = sorted(response["comments"], key=lambda x: x["likes_count"], reverse=True)
+        return response
+
+    # def get_comment_set(self, obj):
+        # comments = obj.comments.all().annotate(q_count=Count('likes')).order_by('-q_count')
+        # return CommentSerializer(comments, many=True, read_only=True).data
+

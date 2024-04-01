@@ -45,10 +45,12 @@ class Course(models.Model):
     platform = models.ForeignKey("Platform", related_name="platform_courses", on_delete=models.CASCADE)
     publisher = models.ForeignKey("auth.User", related_name="user_published", on_delete=models.CASCADE)
     link = models.URLField(max_length=400)
-    verified = models.BooleanField()
+    paid = models.BooleanField(default=False)
+    verified = models.BooleanField(default=False)
     tags = models.ManyToManyField("Tag", related_name="course_tags")
+    rating = models.FloatField(default=0)
     # users = models.ForeignKey("UserCourse", related_name="course_users", on_delete=models.CASCADE)
-    users = models.ManyToManyField("auth.User", related_name="course_users")
+    # users = models.ManyToManyField("auth.User", related_name="course_users")
     # reviews = models.ManyToManyField("Review", related_name="course_reviews")
 
     def __str__(self):
@@ -61,7 +63,7 @@ class Review(models.Model):
     rating = models.IntegerField()
     text_review = models.TextField(null=True, blank=True)
     creation_date = models.DateTimeField(auto_now_add=True)
-    likes = models.IntegerField(default=0)
+    likes = models.ManyToManyField("auth.User", blank=True, related_name="review_likes")
 
     def __str__(self):
         return self.text_review
@@ -69,9 +71,9 @@ class Review(models.Model):
 
 class UserCourse(models.Model):
     # Затестить
-    # user = models.OneToOne("auth.User", related_name="user_courses", on_delete=models.CASCADE)
-    user = models.ForeignKey("auth.User", related_name="user_courses", on_delete=models.CASCADE)
-    courses = models.ManyToManyField("Course", related_name="course_users_1")
+    user = models.OneToOneField("auth.User", related_name="user_courses", on_delete=models.CASCADE)
+    # user = models.ForeignKey("auth.User", related_name="user_courses", on_delete=models.CASCADE)
+    courses = models.ManyToManyField("Course", related_name="course_users")
 
 
 class Comment(models.Model):
@@ -79,7 +81,16 @@ class Comment(models.Model):
     id_course = models.ForeignKey("Course", related_name="comments", on_delete=models.CASCADE)
     creation_date = models.DateTimeField(auto_now_add=True)
     commentary_text = models.TextField()
-    likes = models.IntegerField(default=0)
+    likes = models.ManyToManyField("auth.User", blank=True, related_name="comment_likes")
 
     def __str__(self):
         return self.commentary_text
+    
+
+class Reports(models.Model):
+    user = models.ForeignKey("auth.User", related_name="user_reports", on_delete=models.CASCADE)
+    creation_date = models.DateTimeField(auto_now_add=True)
+    report_text = models.TextField(null=True, blank=True)
+
+
+

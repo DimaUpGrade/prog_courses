@@ -61,18 +61,18 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'prog_courses.urls'
 
 # Put here pythonanywhere server host link
-ALLOWED_HOSTS = ["localhost", "192.168.0.102", "127.0.0.1", "hoofeddragon417.pythonanywhere.com"]
+ALLOWED_HOSTS = ["localhost", "192.168.0.102", "127.0.0.1"]
 
 CORS_ALLOW_CREDENTIALS = True
 
 # Put here netlify client host link
 CORS_ORIGIN_WHITELIST = (
-    'http://localhost:8000', 'http://192.168.0.102:8000', 'http://127.0.0.1:8000'
+    'http://localhost:8080', 'http://192.168.0.102:8000', 'http://127.0.0.1:8000'
 )
 
 # Put here netlify client host link
 CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:8000', 'http://192.168.0.102:8080', 'http://127.0.0.1:8000'
+    'http://localhost:8080', 'http://192.168.0.102:8080', 'http://127.0.0.1:8000'
 ]
 
 
@@ -162,7 +162,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 15,
+    'PAGE_SIZE': 2,
 
     # 'DEFAULT_FILTER_BACKENDS': ('rest_framework_filters.backends.DjangoFilterBackend'),
     'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend'),
