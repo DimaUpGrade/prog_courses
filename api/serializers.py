@@ -75,22 +75,23 @@ class UserFullSerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     user = UserPartialSerializer(many=False, read_only=True)
+    likes_count = serializers.IntegerField()
 
     class Meta:
         model = Review
-        fields = ('id_course', 'user', 'rating', 'text_review', 'creation_date', 'likes')
+        fields = ('id_course', 'user', 'rating', 'text_review', 'creation_date', 'likes_count')
 
 
 class CommentSerializer(serializers.ModelSerializer):
     user = UserPartialSerializer(many=False, read_only=True)
-    likes_count = serializers.SerializerMethodField()
+    likes_count = serializers.IntegerField()
 
     class Meta:
         model = Comment
         fields = ('id', 'id_course', 'user', 'commentary_text', 'creation_date', 'likes_count')
 
-    def get_likes_count(self, obj):
-        return obj.likes.count()
+    # def get_likes_count(self, obj):
+    #     return obj.likes.count()
 
 
 class CourseSerializer(serializers.ModelSerializer):

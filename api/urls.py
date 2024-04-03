@@ -17,6 +17,6 @@ urlpatterns = [
     path('is_username_taken/', IsUsernameTaken.as_view(), name='is_username_taken'),
     path('account/', UserView.as_view(), name='account'),
     path('logout/', UserLogout.as_view(), name='logout'),
-    path('courses/<int:pk>/reviews/', CourseReviews.as_view(), name='course_reviews'),
-    path('courses/<int:pk>/comments/', CourseComments.as_view(), name='course_comments'),
+    path('courses/<int:pk>/comments/', CourseCommentsAPIView.as_view(), name='course_comments'),
+    path('courses/<int:pk>/reviews/', CourseReviewsAPIView.as_view(), name='course_reviews'),
 ]

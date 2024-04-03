@@ -1,5 +1,6 @@
 from django.contrib.auth import login, logout
 from django.shortcuts import render, get_object_or_404, get_list_or_404
+from django.db.models import Count, F
 from rest_framework.authtoken.models import Token
 import rest_framework.permissions as perms
 
@@ -93,37 +94,37 @@ class CourseViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     # не нужно id_course возвращать
     # queryset = Review.objects.select_related('user', 'id_course').order_by('-likes')
-    queryset = Review.objects.select_related('user').order_by('-likes')
+    # queryset = Review.objects.select_related('user').order_by('-likes')
+    queryset = Review.objects.select_related('user').annotate(likes_count=Count(F('likes'))).order_by('-likes_count')
     serializer_class = ReviewSerializer
     filter_backends = (DjangoFilterBackend, )
     filterset_class = ReviewsCourseFilter
 
 
-class CourseReviews(APIView):
+class CourseReviewsAPIView(APIView):
     queryset = Course.objects.all()
 
     def get(self, request, *args, **kwargs):
         course = Course.objects.get(id=self.kwargs["pk"])
-        reviews = course.reviews.all()
+        reviews = course.reviews.annotate(likes_count=Count(F('likes'))).order_by('-likes_count')
         serializer = ReviewSerializer(reviews, many=True)
         return Response(serializer.data)
     
 
-class CourseComments(APIView):
+class CourseCommentsAPIView(APIView):
     queryset = Course.objects.all()
 
     def get(self, request, *args, **kwargs):
         course = Course.objects.get(id=self.kwargs["pk"])
-        comments = course.comments.all()
+        comments = course.comments.annotate(likes_count=Count(F('likes'))).order_by('-likes_count')
         serializer = CommentSerializer(comments, many=True)
-        # print(serializer)
         return Response(serializer.data)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     # не нужно id_course возвращать
     # queryset = Comment.objects.select_related('user', 'id_course').order_by('-likes')
-    queryset = Comment.objects.select_related('user')
+    queryset = Comment.objects.select_related('user').annotate(likes_count=Count(F('likes'))).order_by('-likes_count')
     serializer_class = CommentSerializer
     filter_backends = (DjangoFilterBackend, )
     filterset_class = CommentsCourseFilter
