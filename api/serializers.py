@@ -94,6 +94,18 @@ class CommentSerializer(serializers.ModelSerializer):
     #     return obj.likes.count()
 
 
+# class CoursesSerializer(serializers.ModelSerializer):
+#     # users = UserPartialSerializer(many=True, read_only=True)
+#     tags = TagSerializer(many=True, read_only=False)
+#     author = AuthorSerializer(many=False, read_only=False)
+#     platform = PlatformSerializer(many=False, read_only=False)
+#     publisher = UserPartialSerializer(many=False, read_only=False)
+    
+#     class Meta:
+#         model = Course
+#         fields = ('id', 'title', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'comments')
+
+
 class CourseSerializer(serializers.ModelSerializer):
     # users = UserPartialSerializer(many=True, read_only=True)
     tags = TagSerializer(many=True, read_only=False)
@@ -102,16 +114,16 @@ class CourseSerializer(serializers.ModelSerializer):
     publisher = UserPartialSerializer(many=False, read_only=False)
     # reviews = ReviewSerializer(many=True, read_only=True)
     # comments = serializers.SerializerMethodField()
-    comments = CommentSerializer(many=True, read_only=True)
+    # comments = CommentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Course
-        fields = ('id', 'title', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'comments')
+        fields = ('id', 'title', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags')
 
-    def to_representation(self, instance):
-        response = super().to_representation(instance)
-        response["comments"] = sorted(response["comments"], key=lambda x: x["likes_count"], reverse=True)
-        return response
+    # def to_representation(self, instance):
+    #     response = super().to_representation(instance)
+    #     response["comments"] = sorted(response["comments"], key=lambda x: x["likes_count"], reverse=True)
+    #     return response
 
     # def get_comment_set(self, obj):
         # comments = obj.comments.all().annotate(q_count=Count('likes')).order_by('-q_count')

@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404, get_list_or_404
 from django.db.models import Count, F
 from rest_framework.authtoken.models import Token
 import rest_framework.permissions as perms
-
+from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination
 from rest_framework import generics, status, viewsets
 from .models import (
     Course, 
@@ -103,22 +103,50 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CourseReviewsAPIView(APIView):
     queryset = Course.objects.all()
+    pagination_class = LimitOffsetPagination()
 
     def get(self, request, *args, **kwargs):
         course = Course.objects.get(id=self.kwargs["pk"])
         reviews = course.reviews.annotate(likes_count=Count(F('likes'))).order_by('-likes_count')
-        serializer = ReviewSerializer(reviews, many=True)
-        return Response(serializer.data)
+        # 
+        # Это работает, если прописывать вручную offset и limit в запросе
+        # ?offset=2&limit=1
+        # Возможно, в дальнейшем необходимо исправить
+        #
+        result_page = self.pagination_class.paginate_queryset(reviews, request)
+        serializer = ReviewSerializer(result_page, many=True)
+        response = Response(serializer.data, status=status.HTTP_200_OK)
+        # 
+        # Ниже старый код, который не пагинируется вообще
+        # 
+        # serializer = ReviewSerializer(reviews, many=True)
+        # response = Response(serializer.data, status=status.HTTP_200_OK)
+        # 
+        return response
     
 
 class CourseCommentsAPIView(APIView):
     queryset = Course.objects.all()
+    pagination_class = LimitOffsetPagination()
 
     def get(self, request, *args, **kwargs):
         course = Course.objects.get(id=self.kwargs["pk"])
         comments = course.comments.annotate(likes_count=Count(F('likes'))).order_by('-likes_count')
-        serializer = CommentSerializer(comments, many=True)
-        return Response(serializer.data)
+        #
+        # Это работает, если прописывать вручную offset и limit в запросе
+        # ?offset=2&limit=1
+        # Возможно, в дальнейшем необходимо исправить
+        #
+        result_page = self.pagination_class.paginate_queryset(comments, request)
+        serializer = CommentSerializer(result_page, many=True)
+        response = Response(serializer.data, status=status.HTTP_200_OK)
+        #
+        # Ниже старый код, который не пагинируется вообще
+        #
+        # serializer = CommentSerializer(comments, many=True)
+        # response = Response(serializer.data, status=status.HTTP_200_OK)
+        #
+        return response
 
 
 class CommentViewSet(viewsets.ModelViewSet):
