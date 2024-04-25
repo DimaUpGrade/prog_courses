@@ -118,7 +118,7 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ('id', 'title', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags')
+        fields = ('id', 'title', 'cost', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags')
 
     # def to_representation(self, instance):
     #     response = super().to_representation(instance)

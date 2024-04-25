@@ -47,6 +47,7 @@ class Course(models.Model):
     link = models.URLField(max_length=400)
     paid = models.BooleanField(default=False)
     verified = models.BooleanField(default=False)
+    cost = models.CharField(default="", max_length=20, blank=True, null=True)
     tags = models.ManyToManyField("Tag", related_name="course_tags")
     rating = models.FloatField(default=0)
     # users = models.ForeignKey("UserCourse", related_name="course_users", on_delete=models.CASCADE)
