@@ -80,15 +80,27 @@ class CourseViewSet(viewsets.ModelViewSet):
     serializer_class = CourseSerializer
     filter_backends = (DjangoFilterBackend, )
     filterset_class = CourseTagsFilter
-
-    # # Example of overriding queryset method 
+    
+    def retrieve(self, request, *args, **kwargs):
+        pk = self.kwargs.get("pk")
+        course = get_object_or_404(Course, id=pk)
+        serializer = self.get_serializer(course)
+        return Response(serializer.data)
     # def get_queryset(self):
+    #     print(self.request)
+    #     queryset = self.request.course
+        
+    #     course = get_object_or_404(queryset)
+    #     return course
+
+    # # # Example of overriding queryset method 
+    # def get_queryset(self, *args, **kwargs):
     #     pk = self.kwargs.get("pk")
 
     #     if not pk:
     #         return Course.objects.all()
         
-    #     return Course.objects.filter(pk=pk)
+    #     return get_object_or_404(Course.objects.filter(pk=pk))
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
@@ -102,7 +114,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 
 class CourseReviewsAPIView(APIView):
-    queryset = Course.objects.all()
+    # queryset = Course.objects.all()
     pagination_class = LimitOffsetPagination()
 
     def paginate(self, queryset):
@@ -111,14 +123,16 @@ class CourseReviewsAPIView(APIView):
         return self.pagination_class.get_paginated_response(serializer.data)
 
     def get(self, request, *args, **kwargs):
-        course = Course.objects.get(id=self.kwargs["pk"])
+        # course = Course.objects.get(id=self.kwargs["pk"])
+        pk = self.kwargs.get("pk")
+        course = get_object_or_404(Course, id=pk)
         reviews = course.reviews.annotate(likes_count=Count(F('likes'))).order_by('-likes_count')
         response = self.paginate(reviews)
         return response
     
 
 class CourseCommentsAPIView(APIView):
-    queryset = Course.objects.all()
+    # queryset = Course.objects.all()
     pagination_class = LimitOffsetPagination()
     
     def paginate(self, queryset):
@@ -127,7 +141,9 @@ class CourseCommentsAPIView(APIView):
         return self.pagination_class.get_paginated_response(serializer.data)
 
     def get(self, request, *args, **kwargs):
-        course = Course.objects.get(id=self.kwargs["pk"])
+        # course = Course.objects.get(id=self.kwargs["pk"])
+        pk = self.kwargs.get("pk")
+        course = get_object_or_404(Course, id=pk)
         comments = course.comments.annotate(likes_count=Count(F('likes'))).order_by('-likes_count')
         response = self.paginate(comments)
         return response
