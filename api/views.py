@@ -1,8 +1,11 @@
 from django.contrib.auth import login, logout
+from django.contrib.auth.models import AnonymousUser
 from django.shortcuts import render, get_object_or_404, get_list_or_404
-from django.db.models import Count, F
+from django.db.models import Count, F, Q, ExpressionWrapper, Value
+from django.db import models
 from rest_framework.authtoken.models import Token
 import rest_framework.permissions as perms
+from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination
 from rest_framework import generics, status, viewsets
 from .models import (
@@ -21,15 +24,15 @@ from .serializers import (
     CourseSerializer,
     ReviewSerializer,
     CommentSerializer,
-    UserFullSerializer,
+    UserFullSerializer
 )
 from rest_framework.views import APIView
 from rest_framework.response import Response
+import rest_framework.permissions as perms
 
 # from rest_framework_filters import filters as filters
 from django_filters.rest_framework import DjangoFilterBackend
 from .service import CourseTagsFilter, ReviewsCourseFilter, CommentsCourseFilter
-
 
 
 class UserRegistration(APIView):
@@ -70,6 +73,8 @@ class UserLogin(APIView):
 
 
 class UserLogout(APIView):
+    permission_classes = [perms.IsAuthenticated]
+
     def post(self, request):
         logout(request)
         return Response(status=status.HTTP_200_OK)
@@ -86,6 +91,7 @@ class CourseViewSet(viewsets.ModelViewSet):
         course = get_object_or_404(Course, id=pk)
         serializer = self.get_serializer(course)
         return Response(serializer.data)
+    
     # def get_queryset(self):
     #     print(self.request)
     #     queryset = self.request.course
@@ -112,6 +118,17 @@ class ReviewViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend, )
     filterset_class = ReviewsCourseFilter
 
+    @action(detail=True, methods=['post'], permission_classes=[perms.IsAuthenticated])
+    def like_review(self, request, pk=None):
+        user = self.request.user
+        review = Review.objects.get(pk=pk)
+        if user not in review.likes.all():
+            review.likes.add(user)
+        else:
+            review.likes.remove(user)
+        review.save()
+        return Response(status=status.HTTP_200_OK)
+
 
 class CourseReviewsAPIView(APIView):
     # queryset = Course.objects.all()
@@ -124,9 +141,21 @@ class CourseReviewsAPIView(APIView):
 
     def get(self, request, *args, **kwargs):
         # course = Course.objects.get(id=self.kwargs["pk"])
+        user = self.request.user
         pk = self.kwargs.get("pk")
         course = get_object_or_404(Course, id=pk)
-        reviews = course.reviews.annotate(likes_count=Count(F('likes'))).order_by('-likes_count')
+        # reviews = course.reviews.annotate(likes_count=Count(F('likes'))).order_by('-likes_count')
+        
+        ###
+        if isinstance(user, AnonymousUser):
+            reviews = course.reviews.annotate(likes_count=Count(F('likes'))).annotate(is_liked=Value(False, models.BooleanField())).order_by('-likes_count')
+        else:
+            print(self.request.user)
+            reviews = course.reviews.annotate(likes_count=Count(F('likes'))).annotate(is_liked=ExpressionWrapper(
+                    Q(Q(likes=user)| Q(likes=None)), output_field=models.BooleanField()
+                    )).order_by('-likes_count')
+        ###
+
         response = self.paginate(reviews)
         return response
     
@@ -141,21 +170,59 @@ class CourseCommentsAPIView(APIView):
         return self.pagination_class.get_paginated_response(serializer.data)
 
     def get(self, request, *args, **kwargs):
-        # course = Course.objects.get(id=self.kwargs["pk"])
+        user = self.request.user
         pk = self.kwargs.get("pk")
         course = get_object_or_404(Course, id=pk)
-        comments = course.comments.annotate(likes_count=Count(F('likes'))).order_by('-likes_count')
+        # course = Course.objects.get(id=self.kwargs["pk"])
+        # comments = course.comments.annotate(likes_count=Count(F('likes'))).order_by('-likes_count')
+
+        ###
+        if isinstance(user, AnonymousUser):
+            comments = course.comments.annotate(likes_count=Count(F('likes'))).annotate(is_liked=Value(False, models.BooleanField())).order_by('-likes_count')
+        else:
+            print(self.request.user)
+            comments = course.comments.annotate(likes_count=Count(F('likes'))).annotate(is_liked=ExpressionWrapper(
+                    Q(Q(likes=user)| Q(likes=None)), output_field=models.BooleanField()
+                    )).order_by('-likes_count')
+        ###
+
+        course = get_object_or_404(Course, id=pk)
         response = self.paginate(comments)
         return response
 
 
 class CommentViewSet(viewsets.ModelViewSet):
-    # не нужно id_course возвращать
     # queryset = Comment.objects.select_related('user', 'id_course').order_by('-likes')
     queryset = Comment.objects.select_related('user').annotate(likes_count=Count(F('likes'))).order_by('-likes_count')
     serializer_class = CommentSerializer
     filter_backends = (DjangoFilterBackend, )
     filterset_class = CommentsCourseFilter
+
+    @action(detail=True, methods=['post'], permission_classes=[perms.IsAuthenticated])
+    def like_comment(self, request, pk=None):
+        user = self.request.user
+        comment = Comment.objects.get(pk=pk)
+        if user not in comment.likes.all():
+            comment.likes.add(user)
+        else:
+            comment.likes.remove(user)
+        comment.save()
+        return Response(status=status.HTTP_200_OK)
+
+    # @action(detail=True, methods=['post'])
+    # def cancel_like_comment(self, request, pk=None):
+    #     user = self.request.user
+    #     comment = Comment.objects.get(pk=pk)
+    #     if user in comment.likes:
+    #         comment.likes.remove(user)
+    #     comment.save()
+
+    # @action(detail=True, methods=['post'])
+    # def check_like_comment(self, request, pk=None):
+    #     user = self.request.user
+    #     comment = Comment.objects.get(pk=pk)
+    #     if user in comment.likes:
+
 
 
 class UserView(APIView):
@@ -165,4 +232,4 @@ class UserView(APIView):
     def get(self, request):
         serializer = UserFullSerializer(request.user)
         return Response({'user': serializer.data}, status=status.HTTP_200_OK)
-
+    
