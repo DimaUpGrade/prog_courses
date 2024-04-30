@@ -1,7 +1,7 @@
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import AnonymousUser
 from django.shortcuts import render, get_object_or_404, get_list_or_404
-from django.db.models import Count, F, Q, ExpressionWrapper, Value
+from django.db.models import Count, F, Q, ExpressionWrapper, Value, OuterRef, Case, When, Exists, Sum
 from django.db import models
 from rest_framework.authtoken.models import Token
 import rest_framework.permissions as perms
@@ -133,6 +133,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class CourseReviewsAPIView(APIView):
     # queryset = Course.objects.all()
     pagination_class = LimitOffsetPagination()
+    permission_classes = [perms.IsAuthenticatedOrReadOnly]
 
     def paginate(self, queryset):
         result_page = self.pagination_class.paginate_queryset(queryset, self.request, self)
@@ -141,6 +142,7 @@ class CourseReviewsAPIView(APIView):
 
     def get(self, request, *args, **kwargs):
         # course = Course.objects.get(id=self.kwargs["pk"])
+        
         user = self.request.user
         pk = self.kwargs.get("pk")
         course = get_object_or_404(Course, id=pk)
@@ -150,12 +152,24 @@ class CourseReviewsAPIView(APIView):
         if isinstance(user, AnonymousUser):
             reviews = course.reviews.annotate(likes_count=Count(F('likes'))).annotate(is_liked=Value(False, models.BooleanField())).order_by('-likes_count')
         else:
-            print(self.request.user)
-            reviews = course.reviews.annotate(likes_count=Count(F('likes'))).annotate(is_liked=ExpressionWrapper(
-                    Q(Q(likes=user)| Q(likes=None)), output_field=models.BooleanField()
-                    )).order_by('-likes_count')
-        ###
+            # print(self.request.user)
+            # reviews = course.reviews.annotate(likes_count=Count(F('likes'))).annotate(is_liked=ExpressionWrapper(
+            #         Q(Q(likes=user)| Q(likes=None)), output_field=models.BooleanField()
+            #         )).order_by('-likes_count')
+            reviews = course.reviews.annotate(likes_count=Count(F('likes'))).annotate(
+                is_liked = Sum(
+                    Case(
+                        When(
+                            likes__in=[user.id],
+                            then=Value(True)
+                        ),
+                        default=Value(False),
+                        output_field=models.BooleanField()
+                    )
+                )
+            ).order_by('-likes_count')
 
+        
         response = self.paginate(reviews)
         return response
     
@@ -163,6 +177,7 @@ class CourseReviewsAPIView(APIView):
 class CourseCommentsAPIView(APIView):
     # queryset = Course.objects.all()
     pagination_class = LimitOffsetPagination()
+    permission_classes = [perms.IsAuthenticatedOrReadOnly]
     
     def paginate(self, queryset):
         result_page = self.pagination_class.paginate_queryset(queryset, self.request, self)
@@ -174,17 +189,22 @@ class CourseCommentsAPIView(APIView):
         pk = self.kwargs.get("pk")
         course = get_object_or_404(Course, id=pk)
         # course = Course.objects.get(id=self.kwargs["pk"])
-        # comments = course.comments.annotate(likes_count=Count(F('likes'))).order_by('-likes_count')
 
-        ###
         if isinstance(user, AnonymousUser):
             comments = course.comments.annotate(likes_count=Count(F('likes'))).annotate(is_liked=Value(False, models.BooleanField())).order_by('-likes_count')
         else:
-            print(self.request.user)
-            comments = course.comments.annotate(likes_count=Count(F('likes'))).annotate(is_liked=ExpressionWrapper(
-                    Q(Q(likes=user)| Q(likes=None)), output_field=models.BooleanField()
-                    )).order_by('-likes_count')
-        ###
+            comments = course.comments.annotate(likes_count=Count(F('likes'))).annotate(
+                is_liked = Sum(
+                    Case(
+                        When(
+                            likes__in=[user.id],
+                            then=Value(True)
+                        ),
+                        default=Value(False),
+                        output_field=models.BooleanField()
+                    )
+                )
+            ).order_by('-likes_count')
 
         course = get_object_or_404(Course, id=pk)
         response = self.paginate(comments)
@@ -208,21 +228,6 @@ class CommentViewSet(viewsets.ModelViewSet):
             comment.likes.remove(user)
         comment.save()
         return Response(status=status.HTTP_200_OK)
-
-    # @action(detail=True, methods=['post'])
-    # def cancel_like_comment(self, request, pk=None):
-    #     user = self.request.user
-    #     comment = Comment.objects.get(pk=pk)
-    #     if user in comment.likes:
-    #         comment.likes.remove(user)
-    #     comment.save()
-
-    # @action(detail=True, methods=['post'])
-    # def check_like_comment(self, request, pk=None):
-    #     user = self.request.user
-    #     comment = Comment.objects.get(pk=pk)
-    #     if user in comment.likes:
-
 
 
 class UserView(APIView):
