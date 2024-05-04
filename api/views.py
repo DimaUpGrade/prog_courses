@@ -151,7 +151,7 @@ class CourseReviewsAPIView(APIView):
         
         ###
         if isinstance(user, AnonymousUser):
-            reviews = course.reviews.annotate(likes_count=Count(F('likes'))).annotate(is_liked=Value(False, models.BooleanField())).order_by('-creation_date')
+            reviews = course.reviews.annotate(likes_count=Count(F('likes'))).annotate(is_liked=Value(False, models.BooleanField())).order_by('-likes_count')
         else:
             # print(self.request.user)
             # reviews = course.reviews.annotate(likes_count=Count(F('likes'))).annotate(is_liked=ExpressionWrapper(
@@ -168,7 +168,7 @@ class CourseReviewsAPIView(APIView):
                         output_field=models.BooleanField()
                     )
                 )
-            ).order_by('-creation_date')
+            ).order_by('-likes_count')
 
         
         response = self.paginate(reviews)
@@ -208,7 +208,7 @@ class CourseCommentsAPIView(APIView):
                 )
             ).order_by('-creation_date')
 
-        course = get_object_or_404(Course, id=pk)
+        # course = get_object_or_404(Course, id=pk)
         response = self.paginate(comments)
         return response
 
