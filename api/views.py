@@ -24,6 +24,7 @@ from .serializers import (
     CourseSerializer,
     ReviewSerializer,
     CommentSerializer,
+    CreateCommentSerializer,
     UserFullSerializer
 )
 from rest_framework.views import APIView
@@ -150,7 +151,7 @@ class CourseReviewsAPIView(APIView):
         
         ###
         if isinstance(user, AnonymousUser):
-            reviews = course.reviews.annotate(likes_count=Count(F('likes'))).annotate(is_liked=Value(False, models.BooleanField())).order_by('-likes_count')
+            reviews = course.reviews.annotate(likes_count=Count(F('likes'))).annotate(is_liked=Value(False, models.BooleanField())).order_by('-creation_date')
         else:
             # print(self.request.user)
             # reviews = course.reviews.annotate(likes_count=Count(F('likes'))).annotate(is_liked=ExpressionWrapper(
@@ -167,7 +168,7 @@ class CourseReviewsAPIView(APIView):
                         output_field=models.BooleanField()
                     )
                 )
-            ).order_by('-likes_count')
+            ).order_by('-creation_date')
 
         
         response = self.paginate(reviews)
@@ -190,8 +191,9 @@ class CourseCommentsAPIView(APIView):
         course = get_object_or_404(Course, id=pk)
         # course = Course.objects.get(id=self.kwargs["pk"])
 
+        # .order_by('-likes_count') has been removed for a while
         if isinstance(user, AnonymousUser):
-            comments = course.comments.annotate(likes_count=Count(F('likes'))).annotate(is_liked=Value(False, models.BooleanField())).order_by('-likes_count')
+            comments = course.comments.annotate(likes_count=Count(F('likes'))).annotate(is_liked=Value(False, models.BooleanField())).order_by('-creation_date')
         else:
             comments = course.comments.annotate(likes_count=Count(F('likes'))).annotate(
                 is_liked = Sum(
@@ -204,7 +206,7 @@ class CourseCommentsAPIView(APIView):
                         output_field=models.BooleanField()
                     )
                 )
-            ).order_by('-likes_count')
+            ).order_by('-creation_date')
 
         course = get_object_or_404(Course, id=pk)
         response = self.paginate(comments)
@@ -213,8 +215,10 @@ class CourseCommentsAPIView(APIView):
 
 class CommentViewSet(viewsets.ModelViewSet):
     # queryset = Comment.objects.select_related('user', 'id_course').order_by('-likes')
-    queryset = Comment.objects.select_related('user').annotate(likes_count=Count(F('likes'))).order_by('-likes_count')
+    queryset = Comment.objects.select_related('user').annotate(likes_count=Count(F('likes'))).annotate(is_liked=Value(False, models.BooleanField())).order_by('-likes_count')
     serializer_class = CommentSerializer
+    create_serializer_class = CreateCommentSerializer
+    permission_classes = [perms.IsAuthenticatedOrReadOnly]
     filter_backends = (DjangoFilterBackend, )
     filterset_class = CommentsCourseFilter
 
@@ -228,6 +232,21 @@ class CommentViewSet(viewsets.ModelViewSet):
             comment.likes.remove(user)
         comment.save()
         return Response(status=status.HTTP_200_OK)
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.create_serializer_class(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            if id_course := serializer.data.get('id_course'):
+                course = get_object_or_404(Course, pk=id_course)
+            user = self.request.user
+            commentary_text = serializer.data.get('commentary_text')
+            comment = Comment(id_course=course, commentary_text=commentary_text, user=user)
+            comment.save()
+            
+            return Response("Comment has been created", status=status.HTTP_201_CREATED)
+
+        return Response({'Bad Request': 'Invalid data'}, status=status.HTTP_400_BAD_REQUEST)
+        
 
 
 class UserView(APIView):

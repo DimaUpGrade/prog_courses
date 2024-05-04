@@ -83,6 +83,12 @@ class ReviewSerializer(serializers.ModelSerializer):
         fields = ('id', 'id_course', 'user', 'rating', 'text_review', 'creation_date', 'likes_count', 'is_liked')
 
 
+class CreateCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = ('id_course', 'commentary_text')
+
+
 class CommentSerializer(serializers.ModelSerializer):
     user = UserPartialSerializer(many=False, read_only=True)
     likes_count = serializers.IntegerField()
