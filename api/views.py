@@ -25,7 +25,8 @@ from .serializers import (
     ReviewSerializer,
     CommentSerializer,
     CreateCommentSerializer,
-    UserFullSerializer
+    UserFullSerializer,
+    CreateReviewSerializer
 )
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -93,29 +94,27 @@ class CourseViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(course)
         return Response(serializer.data)
     
-    # def get_queryset(self):
-    #     print(self.request)
-    #     queryset = self.request.course
+    @action(detail=True, methods=['get'], permission_classes=[perms.IsAuthenticated])
+    def is_review_exists(self, request, pk=None):
+        user = self.request.user
+        course = get_object_or_404(Course, pk=pk)
         
-    #     course = get_object_or_404(queryset)
-    #     return course
+        try:
+            entry = Review.objects.select_related('user', 'id_course').annotate(likes_count=Count(F('likes'))).annotate(is_liked=Value(False, models.BooleanField())).get(id_course=course, user=user)
+            result = ReviewSerializer(entry).data 
+            response = Response(result)
+        except Review.DoesNotExist:
+            response = Response(False)
 
-    # # # Example of overriding queryset method 
-    # def get_queryset(self, *args, **kwargs):
-    #     pk = self.kwargs.get("pk")
-
-    #     if not pk:
-    #         return Course.objects.all()
-        
-    #     return get_object_or_404(Course.objects.filter(pk=pk))
+        return response
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
     # не нужно id_course возвращать
     # queryset = Review.objects.select_related('user', 'id_course').order_by('-likes')
-    # queryset = Review.objects.select_related('user').order_by('-likes')
-    queryset = Review.objects.select_related('user').annotate(likes_count=Count(F('likes'))).order_by('-likes_count')
+    queryset = Review.objects.select_related('user').annotate(likes_count=Count(F('likes'))).annotate(is_liked=Value(False, models.BooleanField())).order_by('-likes_count')
     serializer_class = ReviewSerializer
+    create_serializer_class = CreateReviewSerializer
     filter_backends = (DjangoFilterBackend, )
     filterset_class = ReviewsCourseFilter
 
@@ -129,7 +128,45 @@ class ReviewViewSet(viewsets.ModelViewSet):
             review.likes.remove(user)
         review.save()
         return Response(status=status.HTTP_200_OK)
+    
+    ###
+    def create(self, request, *args, **kwargs):
+        serializer = self.create_serializer_class(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            # Check, if course exists
+            if id_course := serializer.data.get('id_course'):
+                course = get_object_or_404(Course, pk=id_course)
+                user = self.request.user
 
+                # Check, if user is not AnonymousUser
+                if isinstance(user, AnonymousUser):
+                    response = Response(status=status.HTTP_401_UNAUTHORIZED)
+                else:
+                    # Check, if user has already sended review for this course
+                    try:
+                        entry = Review.objects.select_related('user', 'id_course').annotate(likes_count=Count(F('likes'))).annotate(is_liked=Value(False, models.BooleanField())).get(
+                            id_course=course,
+                            user=user)
+                        response = Response({'Bad Request': 'This user has already sended review for this course!'}, status=status.HTTP_400_BAD_REQUEST)
+
+                    except Review.DoesNotExist:
+                        text_review = serializer.data.get('text_review')
+                        rating = serializer.data.get('rating')
+                        if rating <= 10 and rating >= 1:
+                            rating = round(rating)
+                            review = Review(id_course=course, text_review=text_review, user=user, rating=rating)
+                            review.save()
+
+                            response = Response("Review has been created", status=status.HTTP_201_CREATED)
+                        else:
+                            response = Response({'Bad Request': 'Invalid rating data'}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                response = Response({'Bad Request': 'Invalud course id'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            response = Response({'Bad Request': 'Invalid data'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return response
+    ###
 
 class CourseReviewsAPIView(APIView):
     # queryset = Course.objects.all()
@@ -147,16 +184,10 @@ class CourseReviewsAPIView(APIView):
         user = self.request.user
         pk = self.kwargs.get("pk")
         course = get_object_or_404(Course, id=pk)
-        # reviews = course.reviews.annotate(likes_count=Count(F('likes'))).order_by('-likes_count')
         
-        ###
         if isinstance(user, AnonymousUser):
             reviews = course.reviews.annotate(likes_count=Count(F('likes'))).annotate(is_liked=Value(False, models.BooleanField())).order_by('-likes_count')
         else:
-            # print(self.request.user)
-            # reviews = course.reviews.annotate(likes_count=Count(F('likes'))).annotate(is_liked=ExpressionWrapper(
-            #         Q(Q(likes=user)| Q(likes=None)), output_field=models.BooleanField()
-            #         )).order_by('-likes_count')
             reviews = course.reviews.annotate(likes_count=Count(F('likes'))).annotate(
                 is_liked = Sum(
                     Case(
@@ -170,7 +201,6 @@ class CourseReviewsAPIView(APIView):
                 )
             ).order_by('-likes_count')
 
-        
         response = self.paginate(reviews)
         return response
     
@@ -208,7 +238,6 @@ class CourseCommentsAPIView(APIView):
                 )
             ).order_by('-creation_date')
 
-        # course = get_object_or_404(Course, id=pk)
         response = self.paginate(comments)
         return response
 

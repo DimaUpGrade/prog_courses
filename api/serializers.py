@@ -73,6 +73,12 @@ class UserFullSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class CreateReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = ('id_course', 'text_review', 'rating')
+
+
 class ReviewSerializer(serializers.ModelSerializer):
     user = UserPartialSerializer(many=False, read_only=True)
     likes_count = serializers.IntegerField()
