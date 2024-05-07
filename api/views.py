@@ -26,7 +26,8 @@ from .serializers import (
     CommentSerializer,
     CreateCommentSerializer,
     UserFullSerializer,
-    CreateReviewSerializer
+    CreateReviewSerializer,
+    CreateCourseSerializer
 )
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -85,6 +86,7 @@ class UserLogout(APIView):
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.select_related('platform', 'author', 'publisher').prefetch_related('tags')
     serializer_class = CourseSerializer
+    create_serializer_class = CreateCourseSerializer
     filter_backends = (DjangoFilterBackend, )
     filterset_class = CourseTagsFilter
     
@@ -107,6 +109,52 @@ class CourseViewSet(viewsets.ModelViewSet):
             response = Response(False)
 
         return response
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.create_serializer_class(data=request.data)
+        # print(request.data)
+        if serializer.is_valid(raise_exception=True):
+            user = self.request.user
+            if isinstance(user, AnonymousUser):
+                response = Response(status=status.HTTP_401_UNAUTHORIZED)
+            else:
+                title = serializer.data.get('title')
+                description = serializer.data.get('description')
+                link = serializer.data.get('link')
+                cost = serializer.data.get('cost')
+
+                try:
+                    course = Course.objects.get(link=link)
+                    return Response({'Bad Request': 'This course is already exists!'}, status=status.HTTP_400_BAD_REQUEST)
+                except Course.DoesNotExist:
+                    if cost.lower() == "бесплатно":
+                        paid = False
+                    else:
+                        paid = True
+
+                    author_link = request.data["author_link"]
+
+                    try:
+                        author = Author.objects.get(link=author_link)
+                    except Author.DoesNotExist:
+                        author_username = request.data["author_username"]
+                        author = Author(username=author_username, link=author_link)
+                        author.save()
+
+                    try:
+                        platform = Platform.objects.get(title=request.data["platform"])
+                    except Platform.DoesNotExist:
+                        platform = Platform(title=request.data["platform"])
+                        platform.save()
+
+                    course = Course(title=title, description=description, link=link, cost=cost, paid=paid, author=author, platform=platform, publisher=user)
+                    course.save()
+                    response = Response("Course has been added", status=status.HTTP_201_CREATED)
+        else:
+            response = Response({'Bad Request': 'Invalid data'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return response
+
 
 
 class ReviewViewSet(viewsets.ModelViewSet):

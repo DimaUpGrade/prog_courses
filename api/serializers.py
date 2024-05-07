@@ -49,6 +49,12 @@ class AuthorSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+# class CreateAuthorSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Author
+#         fields = ('username', 'link')
+
+
 class UserCourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserCourse
@@ -140,3 +146,8 @@ class CourseSerializer(serializers.ModelSerializer):
         # comments = obj.comments.all().annotate(q_count=Count('likes')).order_by('-q_count')
         # return CommentSerializer(comments, many=True, read_only=True).data
 
+
+class CreateCourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ('title', 'description', 'link', 'cost')
