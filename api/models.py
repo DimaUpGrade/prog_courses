@@ -1,6 +1,5 @@
 from django.db import models
 
-
 #
 # Default Django User model (i.e. auth.models.User class)
 # has atributes:
@@ -38,8 +37,16 @@ class Tag(models.Model):
         return self.title
 
 
+class SearchWord(models.Model):
+    title = models.CharField(max_length=25)
+    
+    def __str__(self):
+        return self.title
+
+
 class Course(models.Model):
     title = models.CharField(max_length=70)
+    search_words = models.ManyToManyField("SearchWord", related_name="search_words")
     description = models.TextField()
     author = models.ForeignKey("Author", related_name='author_courses', on_delete=models.CASCADE)
     platform = models.ForeignKey("Platform", related_name="platform_courses", on_delete=models.CASCADE)

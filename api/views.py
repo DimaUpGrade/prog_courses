@@ -15,7 +15,8 @@ from .models import (
     Review, 
     Platform, 
     Author, 
-    Tag
+    Tag,
+    SearchWord
 )
 from .serializers import (
     UserRegistrationSerializer, 
@@ -36,6 +37,7 @@ import rest_framework.permissions as perms
 # from rest_framework_filters import filters as filters
 from django_filters.rest_framework import DjangoFilterBackend
 from .service import CourseTagsFilter, ReviewsCourseFilter, CommentsCourseFilter
+from .search import SearchWordsConverter, pymorphy2_311_hotfix
 
 
 class UserRegistration(APIView):
@@ -84,12 +86,40 @@ class UserLogout(APIView):
 
 
 class CourseViewSet(viewsets.ModelViewSet):
-    queryset = Course.objects.select_related('platform', 'author', 'publisher').prefetch_related('tags')
+    queryset = Course.objects.select_related('platform', 'author', 'publisher').prefetch_related('tags', 'search_words')
     serializer_class = CourseSerializer
     create_serializer_class = CreateCourseSerializer
     filter_backends = (DjangoFilterBackend, )
     filterset_class = CourseTagsFilter
     
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        # Searching by courses
+        if request.GET.get('search_query'):
+            search_query = request.GET.get('search_query')
+            print('bebra ' + search_query + ' bebra')
+            if request.GET.get('only_free'):
+                only_free = request.GET.get('only_free')
+            else:
+                only_free = False
+
+            search_words_obj = SearchWordsConverter(search_query)
+            search_words = search_words_obj.get_search_words_list()
+            
+            if only_free:
+                queryset = queryset.filter(paid=False).filter(search_words__title__in=search_words).distinct()
+            else:
+                queryset = queryset.filter(search_words__title__in=search_words).distinct()
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
     def retrieve(self, request, *args, **kwargs):
         pk = self.kwargs.get("pk")
         course = get_object_or_404(Course, id=pk)
@@ -145,10 +175,26 @@ class CourseViewSet(viewsets.ModelViewSet):
                         platform = Platform.objects.get(title=request.data["platform"])
                     except Platform.DoesNotExist:
                         platform = Platform(title=request.data["platform"])
-                        platform.save()
+                        platform.save()                    
 
                     course = Course(title=title, description=description, link=link, cost=cost, paid=paid, author=author, platform=platform, publisher=user)
                     course.save()
+                    
+                    search_words_obj = SearchWordsConverter(title)
+                    search_words = search_words_obj.get_search_words_list()
+                    search_words.extend([title, author_username])
+                    
+                    for word in search_words:
+                        try:
+                            search_word = SearchWord.objects.get(title=word)
+                        except SearchWord.DoesNotExist:
+                            search_word = SearchWord(title=word)
+                            search_word.save()
+                            
+                        course.search_words.add(search_word)
+                            
+                    
+                    
                     response = Response("Course has been added", status=status.HTTP_201_CREATED)
         else:
             response = Response({'Bad Request': 'Invalid data'}, status=status.HTTP_400_BAD_REQUEST)

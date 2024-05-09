@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Course, UserCourse, Comment, Review, Platform, Author, Tag
+from .models import Course, UserCourse, Comment, Review, Platform, Author, Tag, SearchWord
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
@@ -126,16 +126,23 @@ class CommentSerializer(serializers.ModelSerializer):
 #         fields = ('id', 'title', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'comments')
 
 
+class SearchWordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SearchWord
+        fields = '__all__'
+
+
 class CourseSerializer(serializers.ModelSerializer):
     # users = UserPartialSerializer(many=True, read_only=True)
     tags = TagSerializer(many=True, read_only=False)
+    search_words = SearchWordSerializer(many=True, read_only=False)
     author = AuthorSerializer(many=False, read_only=False)
     platform = PlatformSerializer(many=False, read_only=False)
     publisher = UserPartialSerializer(many=False, read_only=False)
 
     class Meta:
         model = Course
-        fields = ('id', 'title', 'cost', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags')
+        fields = ('id', 'title', 'cost', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'search_words')
 
     # def to_representation(self, instance):
     #     response = super().to_representation(instance)
