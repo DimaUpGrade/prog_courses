@@ -28,7 +28,8 @@ from .serializers import (
     CreateCommentSerializer,
     UserFullSerializer,
     CreateReviewSerializer,
-    CreateCourseSerializer
+    CreateCourseSerializer,
+    PlatformSerializer
 )
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -85,16 +86,22 @@ class UserLogout(APIView):
         return Response(status=status.HTTP_200_OK)
 
 
-# class SearchResultListView(generics.ListAPIView):
-#     pass
+class PlatformListAPIView(generics.ListAPIView):
+    queryset = Platform.objects.all()
+    serializer_class = PlatformSerializer
+    filter_backends = (DjangoFilterBackend, )
 
 
 class CourseViewSet(viewsets.ModelViewSet):
-    queryset = Course.objects.select_related('platform', 'author', 'publisher').prefetch_related('tags', 'search_words')
+    queryset = Course.objects.select_related('platform', 'author', 'publisher').prefetch_related('tags', 'search_words').annotate(sum_weight=Value(0, models.IntegerField()))
     serializer_class = CourseSerializer
     create_serializer_class = CreateCourseSerializer
     filter_backends = (DjangoFilterBackend, )
     filterset_class = CourseFilter
+    
+    # Function for delete all search words from course entry
+    def destroy_all_search_words(self, course):
+        pass
     
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -110,8 +117,7 @@ class CourseViewSet(viewsets.ModelViewSet):
 
             
             if request.GET.get('only_free'):
-                only_free = True if request.GET.get('only_free')=='true' else False
-                queryset = queryset.filter(paid=only_free)
+                queryset = queryset.filter(paid=False)
 
             # if only_free:
             #     queryset = queryset.filter(paid=False).filter(search_words__title__in=search_words).distinct()
@@ -199,7 +205,16 @@ class CourseViewSet(viewsets.ModelViewSet):
                     search_words.extend([[title, 20], [author_username, 10]])
                     
                     for item in search_words:
-                        search_word = SearchWord(title=item[0], weight=item[1])
+                        
+                        ###
+                        try:
+                            search_word = SearchWord.objects.get(title=item[0])
+                        except SearchWord.DoesNotExist:
+                            search_word = SearchWord(title=item[0], weight=item[1])
+                        ###
+                        
+                        
+                        # search_word = SearchWord(title=item[0], weight=item[1])
                         search_word.save()
                             
                         course.search_words.add(search_word)
@@ -211,7 +226,6 @@ class CourseViewSet(viewsets.ModelViewSet):
             response = Response({'Bad Request': 'Invalid data'}, status=status.HTTP_400_BAD_REQUEST)
 
         return response
-
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
