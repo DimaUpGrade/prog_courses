@@ -115,22 +115,9 @@ class CourseViewSet(viewsets.ModelViewSet):
             
             queryset = queryset.filter(search_words__title__in=search_words).annotate(sum_weight=Sum(F('search_words__weight'), filter=Q(search_words__title__in=search_words))).order_by('-sum_weight')
 
-            
             if request.GET.get('only_free'):
                 queryset = queryset.filter(paid=False)
 
-            # if only_free:
-            #     queryset = queryset.filter(paid=False).filter(search_words__title__in=search_words).distinct()
-            # else:
-            #     queryset = queryset.filter(search_words__title__in=search_words).distinct()
-
-            # queryset = queryset.filter(search_words__title__in=search_words).annotate(sum_weight=Sum(F('search_words__weight'), filter=Q(search_words__title__in=search_words))).order_by('-sum_weight')
-            
-            
-                
-            # print(queryset.values())
-
-            
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
@@ -138,12 +125,18 @@ class CourseViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-
+    
+    
     def retrieve(self, request, *args, **kwargs):
         pk = self.kwargs.get("pk")
-        course = get_object_or_404(Course, id=pk)
-        serializer = self.get_serializer(course)
-        return Response(serializer.data)
+        # course = get_object_or_404(Course, id=pk)
+        try:
+            course = Course.objects.annotate(sum_weight=Value(0, models.IntegerField())).get(id=pk)
+            serializer = self.get_serializer(course)
+            return Response(serializer.data)
+        except Course.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        
     
     @action(detail=True, methods=['get'], permission_classes=[perms.IsAuthenticated])
     def is_review_exists(self, request, pk=None):
