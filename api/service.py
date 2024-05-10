@@ -17,11 +17,12 @@ class NumberFieldInFilter(filters.BaseInFilter, filters.NumberFilter):
 class CourseFilter(filters.FilterSet):
     tags = CharFieldInFilter(field_name='tags__title', lookup_expr='in')
     platform = CharFieldInFilter(field_name='platform__title', lookup_expr='in')
+    verified = BooleanFilter(field_name='verified', lookup_expr='exact')
     # only_free = BooleanFilter(field_name='is_free', lookup_expr='exact')
 
     class Meta:
         model = Course
-        fields = ['tags', 'platform']
+        fields = ['tags', 'platform', 'verified']
 
 
 class ReviewsCourseFilter(filters.FilterSet):
