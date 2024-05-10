@@ -1,4 +1,5 @@
 from django_filters import rest_framework as filters
+from django_filters import BooleanFilter
 from .models import *
 
 
@@ -13,9 +14,10 @@ class NumberFieldInFilter(filters.BaseInFilter, filters.NumberFilter):
 # For example, it works (!):
 # ?platform=YouTube&?tags=VueJS&tags=JavaScript
 #
-class CourseTagsFilter(filters.FilterSet):
+class CourseFilter(filters.FilterSet):
     tags = CharFieldInFilter(field_name='tags__title', lookup_expr='in')
     platform = CharFieldInFilter(field_name='platform__title', lookup_expr='in')
+    # only_free = BooleanFilter(field_name='is_free', lookup_expr='exact')
 
     class Meta:
         model = Course

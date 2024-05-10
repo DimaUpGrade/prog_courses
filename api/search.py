@@ -16,37 +16,67 @@ def pymorphy2_311_hotfix():
 
 
 class SearchWordsConverter:
+    # Исключаемые по краям символы
+    trim_symbols = ":;-–—.,<>\'\\\""
+    
+    # Вес слова в зависимости от его части речи
+    part_of_speach_weight = {
+            'NOUN': 5,
+            'VERB': 5,
+            'ADJF': 3,
+            'ADVB': 3
+        }
+    
+    # Служебные части речи для исключения
+    functors_pos = {'INTJ', 'PRCL', 'CONJ', 'PREP'}
+    
     def __init__(self, start_string):
         self.start_string = start_string
 
-    def get_search_words_list(self):
+    def get_search_words_list_with_weight(self):
         pymorphy2_311_hotfix()
         morth = pymorphy2.MorphAnalyzer()
-
         result_list = list()
-        functors_pos = {'INTJ', 'PRCL', 'CONJ', 'PREP'}
-
-        lower_start_string = self.start_string.lower()
-        raw_list = lower_start_string.split()
-        kyr_words = list()
-        non_kyr_words = list()
+        
+        raw_list = self.start_string.lower().split()
 
         # Сортируем на слова из кириллических символов и на остальные
         for word in raw_list:
-            if not re.search(r'(?i)[^а-яё]', word):
-                kyr_words.append(word)
+            trim_word = word.strip(self.trim_symbols)
+            if not re.search(r'(?i)[^а-яё]', trim_word):
+                parsing_word = morth.parse(trim_word)[0]
+                if parsing_word.tag.POS not in self.functors_pos:
+                    if parsing_word.tag.POS in self.part_of_speach_weight:
+                        weight = self.part_of_speach_weight[parsing_word.tag.POS]
+                    else:
+                        weight = 1
+                    
+                    result_list.append([parsing_word.normal_form, weight])
             else:
-                non_kyr_words.append(word)
+                result_list.append([trim_word, 10])
+                
+        return result_list
+    
+    def get_search_words_list(self):
+        pymorphy2_311_hotfix()
+        morth = pymorphy2.MorphAnalyzer()
+        result_list = list()
+        
+        raw_list = self.start_string.lower().split()
 
-        for word in kyr_words:
-            # Берём наиболее вероятный вариант
-            parsing_word = morth.parse(word)[0]
-            if parsing_word.tag.POS not in functors_pos:
-                result_list.append(parsing_word.normal_form)
+        # Сортируем на слова из кириллических символов и на остальные
+        for word in raw_list:
+            trim_word = word.strip(self.trim_symbols)
+            # Если слово состоит из кириллических символов
+            if not re.search(r'(?i)[^а-яё]', trim_word):
+                # Берём наиболее вероятный вариант
+                parsing_word = morth.parse(trim_word)[0]
+                if parsing_word.tag.POS not in self.functors_pos:
+                    result_list.append(parsing_word.normal_form)
+            # Если слово состоит из некириллических символов, то просто добавляем
             else:
-                continue
-
-        result_list.extend(non_kyr_words)
-        result_list.append(self.start_string)
+                result_list.append(trim_word)
 
         return result_list
+        
+        

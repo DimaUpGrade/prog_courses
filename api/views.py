@@ -36,7 +36,7 @@ import rest_framework.permissions as perms
 
 # from rest_framework_filters import filters as filters
 from django_filters.rest_framework import DjangoFilterBackend
-from .service import CourseTagsFilter, ReviewsCourseFilter, CommentsCourseFilter
+from .service import CourseFilter, ReviewsCourseFilter, CommentsCourseFilter
 from .search import SearchWordsConverter, pymorphy2_311_hotfix
 
 
@@ -85,12 +85,16 @@ class UserLogout(APIView):
         return Response(status=status.HTTP_200_OK)
 
 
+# class SearchResultListView(generics.ListAPIView):
+#     pass
+
+
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.select_related('platform', 'author', 'publisher').prefetch_related('tags', 'search_words')
     serializer_class = CourseSerializer
     create_serializer_class = CreateCourseSerializer
     filter_backends = (DjangoFilterBackend, )
-    filterset_class = CourseTagsFilter
+    filterset_class = CourseFilter
     
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -98,20 +102,29 @@ class CourseViewSet(viewsets.ModelViewSet):
         # Searching by courses
         if request.GET.get('search_query'):
             search_query = request.GET.get('search_query')
-            print('bebra ' + search_query + ' bebra')
-            if request.GET.get('only_free'):
-                only_free = request.GET.get('only_free')
-            else:
-                only_free = False
-
             search_words_obj = SearchWordsConverter(search_query)
             search_words = search_words_obj.get_search_words_list()
+            search_words.append(search_query)
             
-            if only_free:
-                queryset = queryset.filter(paid=False).filter(search_words__title__in=search_words).distinct()
-            else:
-                queryset = queryset.filter(search_words__title__in=search_words).distinct()
+            queryset = queryset.filter(search_words__title__in=search_words).annotate(sum_weight=Sum(F('search_words__weight'), filter=Q(search_words__title__in=search_words))).order_by('-sum_weight')
 
+            
+            if request.GET.get('only_free'):
+                only_free = True if request.GET.get('only_free')=='true' else False
+                queryset = queryset.filter(paid=only_free)
+
+            # if only_free:
+            #     queryset = queryset.filter(paid=False).filter(search_words__title__in=search_words).distinct()
+            # else:
+            #     queryset = queryset.filter(search_words__title__in=search_words).distinct()
+
+            # queryset = queryset.filter(search_words__title__in=search_words).annotate(sum_weight=Sum(F('search_words__weight'), filter=Q(search_words__title__in=search_words))).order_by('-sum_weight')
+            
+            
+                
+            # print(queryset.values())
+
+            
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
@@ -163,11 +176,12 @@ class CourseViewSet(viewsets.ModelViewSet):
                         paid = True
 
                     author_link = request.data["author_link"]
+                    author_username = request.data["author_username"]
 
                     try:
                         author = Author.objects.get(link=author_link)
                     except Author.DoesNotExist:
-                        author_username = request.data["author_username"]
+                        
                         author = Author(username=author_username, link=author_link)
                         author.save()
 
@@ -181,15 +195,12 @@ class CourseViewSet(viewsets.ModelViewSet):
                     course.save()
                     
                     search_words_obj = SearchWordsConverter(title)
-                    search_words = search_words_obj.get_search_words_list()
-                    search_words.extend([title, author_username])
+                    search_words = search_words_obj.get_search_words_list_with_weight()
+                    search_words.extend([[title, 20], [author_username, 10]])
                     
-                    for word in search_words:
-                        try:
-                            search_word = SearchWord.objects.get(title=word)
-                        except SearchWord.DoesNotExist:
-                            search_word = SearchWord(title=word)
-                            search_word.save()
+                    for item in search_words:
+                        search_word = SearchWord(title=item[0], weight=item[1])
+                        search_word.save()
                             
                         course.search_words.add(search_word)
                             

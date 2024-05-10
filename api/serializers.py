@@ -139,10 +139,11 @@ class CourseSerializer(serializers.ModelSerializer):
     author = AuthorSerializer(many=False, read_only=False)
     platform = PlatformSerializer(many=False, read_only=False)
     publisher = UserPartialSerializer(many=False, read_only=False)
+    sum_weight = serializers.IntegerField()
 
     class Meta:
         model = Course
-        fields = ('id', 'title', 'cost', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'search_words')
+        fields = ('id', 'title', 'cost', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'search_words', 'sum_weight')
 
     # def to_representation(self, instance):
     #     response = super().to_representation(instance)
