@@ -29,7 +29,8 @@ from .serializers import (
     UserFullSerializer,
     CreateReviewSerializer,
     CreateCourseSerializer,
-    PlatformSerializer
+    PlatformSerializer,
+    UserCourseSerializer
 )
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -100,8 +101,8 @@ class CourseViewSet(viewsets.ModelViewSet):
     filterset_class = CourseFilter
     
     # Function for delete all search words from course entry
-    def destroy_all_search_words(self, course):
-        pass
+    # def destroy_all_search_words(self, course):
+    #     pass
     
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -389,7 +390,6 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Response({'Bad Request': 'Invalid data'}, status=status.HTTP_400_BAD_REQUEST)
         
 
-
 class UserView(APIView):
     permission_classes = [perms.IsAuthenticated]
     serializer_class = UserFullSerializer
@@ -397,4 +397,37 @@ class UserView(APIView):
     def get(self, request):
         serializer = UserFullSerializer(request.user)
         return Response({'user': serializer.data}, status=status.HTTP_200_OK)
+
+# # Неправильная реализация, нужно сделать через listapi и без модели
+#
+# class UserCourseViewSet(viewsets.ModelViewSet):
+#     permission_classes = [perms.IsAuthenticated]
+#     serializer_class = UserCourseSerializer
+#     filter_backends = (DjangoFilterBackend, )
+#     queryset = UserCourse.objects.select_related('user').prefetch_related('courses')
     
+#     @action(detail=True, methods=['post'])
+#     def add_to_favorite(self, request, pk=None):
+#         user = self.request.user
+#         queryset = self.get_queryset()
+#         id_course = self.request.data['id_course']
+#         course = Course.objects.get(pk=id_course)
+        
+#         try:
+#             user_courses = queryset.get(user=user)
+#         except UserCourse.DoesNotExist:
+#             user_courses = UserCourse(user)
+#             user_courses.save()
+            
+#         if course not in user_courses.courses:
+#             user_courses.courses.add(course)
+#         else:
+#             user_courses.courses.remove(course)
+        
+#         return Response(status=status.HTTP_200_OK)
+    
+#     def retrieve(self, request, *args, **kwargs):
+#         user = self.request.user
+#         user_courses = self.get_queryset().get(user=user)
+#         serializer = self.get_serializer(user_courses)
+#         return Response(serializer.data)

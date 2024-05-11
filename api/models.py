@@ -82,7 +82,7 @@ class UserCourse(models.Model):
     # Затестить
     user = models.OneToOneField("auth.User", related_name="user_courses", on_delete=models.CASCADE)
     # user = models.ForeignKey("auth.User", related_name="user_courses", on_delete=models.CASCADE)
-    courses = models.ManyToManyField("Course", related_name="course_users")
+    courses = models.ManyToManyField("Course", related_name="course_users", blank=True)
 
 
 class Comment(models.Model):
