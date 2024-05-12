@@ -9,8 +9,7 @@ from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination
 from rest_framework import generics, status, viewsets
 from .models import (
-    Course, 
-    UserCourse, 
+    Course,  
     Comment, 
     Review, 
     Platform, 
@@ -30,8 +29,10 @@ from .serializers import (
     CreateReviewSerializer,
     CreateCourseSerializer,
     PlatformSerializer,
-    UserCourseSerializer
+    UserCourseSerializer,
+    SearchResultsSerializer
 )
+from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.response import Response
 import rest_framework.permissions as perms
@@ -94,18 +95,15 @@ class PlatformListAPIView(generics.ListAPIView):
 
 
 class CourseViewSet(viewsets.ModelViewSet):
-    queryset = Course.objects.select_related('platform', 'author', 'publisher').prefetch_related('tags', 'search_words').annotate(sum_weight=Value(0, models.IntegerField()))
+    # queryset = Course.objects.select_related('platform', 'author', 'publisher').prefetch_related('tags', 'search_words').annotate(sum_weight=Value(0, models.IntegerField()))
+    queryset = Course.objects.select_related('platform', 'author', 'publisher').prefetch_related('tags').annotate(in_favorite=Value(False, models.BooleanField()))
     serializer_class = CourseSerializer
     create_serializer_class = CreateCourseSerializer
     filter_backends = (DjangoFilterBackend, )
     filterset_class = CourseFilter
     
-    # Function for delete all search words from course entry
-    # def destroy_all_search_words(self, course):
-    #     pass
-    
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+        queryset = self.filter_queryset(self.get_queryset().prefetch_related('search_words'))
         
         # Searching by courses
         if request.GET.get('search_query'):
@@ -114,31 +112,49 @@ class CourseViewSet(viewsets.ModelViewSet):
             search_words = search_words_obj.get_search_words_list()
             search_words.append(search_query)
             
-            queryset = queryset.filter(search_words__title__in=search_words).annotate(sum_weight=Sum(F('search_words__weight'), filter=Q(search_words__title__in=search_words))).order_by('-sum_weight')
+            queryset = self.get_queryset().filter(search_words__title__in=search_words).annotate(sum_weight=Sum(F('search_words__weight'), filter=Q(search_words__title__in=search_words))).order_by('-sum_weight')
 
             if request.GET.get('only_free'):
                 queryset = queryset.filter(paid=False)
 
-        page = self.paginate_queryset(queryset)
-        if page is not None:
+            page = self.paginate_queryset(queryset)
+            serializer = SearchResultsSerializer(page, many=True)
+        else:
+            page = self.paginate_queryset(queryset)
             serializer = self.get_serializer(page, many=True)
+            
+        if page is not None:
             return self.get_paginated_response(serializer.data)
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
     
-    
     def retrieve(self, request, *args, **kwargs):
         pk = self.kwargs.get("pk")
         # course = get_object_or_404(Course, id=pk)
+        user = self.request.user
+        
         try:
-            course = Course.objects.annotate(sum_weight=Value(0, models.IntegerField())).get(id=pk)
+            if isinstance(user, AnonymousUser):
+                course = Course.objects.annotate(in_favorite=Value(True, models.BooleanField())).get(id=pk)
+            else:
+                course = Course.objects.annotate(in_favorite = Sum(
+                    Case(
+                        When(
+                            users__in=[user.id],
+                            then=Value(True)
+                        ),
+                        default=Value(False),
+                        output_field=models.BooleanField()
+                    )
+                )).get(id=pk)
+                
+            
             serializer = self.get_serializer(course)
             return Response(serializer.data)
         except Course.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
         
-    
     @action(detail=True, methods=['get'], permission_classes=[perms.IsAuthenticated])
     def is_review_exists(self, request, pk=None):
         user = self.request.user
@@ -152,6 +168,18 @@ class CourseViewSet(viewsets.ModelViewSet):
             response = Response(False)
 
         return response
+    
+    @action(detail=True, methods=['patch'], permission_classes=[perms.IsAuthenticated])
+    def add_to_favorite(self, request, pk=None):
+        user = self.request.user
+        course = get_object_or_404(Course, pk=pk)
+        
+        if user in course.users.all():
+            course.users.remove(user)
+        else:
+            course.users.add(user)
+        
+        return Response(status=status.HTTP_200_OK)
     
     def create(self, request, *args, **kwargs):
         serializer = self.create_serializer_class(data=request.data)
@@ -398,36 +426,35 @@ class UserView(APIView):
         serializer = UserFullSerializer(request.user)
         return Response({'user': serializer.data}, status=status.HTTP_200_OK)
 
-# # Неправильная реализация, нужно сделать через listapi и без модели
-#
-# class UserCourseViewSet(viewsets.ModelViewSet):
-#     permission_classes = [perms.IsAuthenticated]
-#     serializer_class = UserCourseSerializer
-#     filter_backends = (DjangoFilterBackend, )
-#     queryset = UserCourse.objects.select_related('user').prefetch_related('courses')
-    
-#     @action(detail=True, methods=['post'])
-#     def add_to_favorite(self, request, pk=None):
-#         user = self.request.user
-#         queryset = self.get_queryset()
-#         id_course = self.request.data['id_course']
-#         course = Course.objects.get(pk=id_course)
+
+class UserCoursesAPIView(APIView):
+    pagination_class = LimitOffsetPagination()
+    serializer_class = UserCourseSerializer
+    permission_classes = [perms.IsAuthenticated]
+
+    def paginate(self, queryset):
+        result_page = self.pagination_class.paginate_queryset(queryset, self.request, self)
+        serializer = self.serializer_class(result_page, many=True)
+        return self.pagination_class.get_paginated_response(serializer.data)
+
+    def get(self, request, *args, **kwargs):
+        user = self.request.user
+        # user = User.objects.get(username='dimau')
         
-#         try:
-#             user_courses = queryset.get(user=user)
-#         except UserCourse.DoesNotExist:
-#             user_courses = UserCourse(user)
-#             user_courses.save()
-            
-#         if course not in user_courses.courses:
-#             user_courses.courses.add(course)
-#         else:
-#             user_courses.courses.remove(course)
+        # # Если будет нужно вернуть in_favorite для курса 
+        # user_courses = user.course_users.annotate(in_favorite = Sum(
+        #             Case(
+        #                 When(
+        #                     users__in=[user.id],
+        #                     then=Value(True)
+        #                 ),
+        #                 default=Value(False),
+        #                 output_field=models.BooleanField()
+        #             )
+        #         )).all()
         
-#         return Response(status=status.HTTP_200_OK)
+        user_courses = user.course_users.all()
+        response = self.paginate(user_courses)
+        return response
+        
     
-#     def retrieve(self, request, *args, **kwargs):
-#         user = self.request.user
-#         user_courses = self.get_queryset().get(user=user)
-#         serializer = self.get_serializer(user_courses)
-#         return Response(serializer.data)

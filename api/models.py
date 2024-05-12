@@ -59,7 +59,7 @@ class Course(models.Model):
     tags = models.ManyToManyField("Tag", related_name="course_tags")
     rating = models.FloatField(default=0)
     # users = models.ForeignKey("UserCourse", related_name="course_users", on_delete=models.CASCADE)
-    # users = models.ManyToManyField("auth.User", related_name="course_users")
+    users = models.ManyToManyField("auth.User", related_name="course_users", blank=True)
     # reviews = models.ManyToManyField("Review", related_name="course_reviews")
 
     def __str__(self):
@@ -78,11 +78,11 @@ class Review(models.Model):
         return self.text_review
     
 
-class UserCourse(models.Model):
-    # Затестить
-    user = models.OneToOneField("auth.User", related_name="user_courses", on_delete=models.CASCADE)
-    # user = models.ForeignKey("auth.User", related_name="user_courses", on_delete=models.CASCADE)
-    courses = models.ManyToManyField("Course", related_name="course_users", blank=True)
+# class UserCourse(models.Model):
+#     # Затестить
+#     user = models.OneToOneField("auth.User", related_name="user_courses", on_delete=models.CASCADE)
+#     # user = models.ForeignKey("auth.User", related_name="user_courses", on_delete=models.CASCADE)
+#     courses = models.ManyToManyField("Course", related_name="course_users", blank=True)
 
 
 class Comment(models.Model):

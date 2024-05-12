@@ -20,4 +20,5 @@ urlpatterns = [
     path('courses/<int:pk>/comments/', CourseCommentsAPIView.as_view(), name='course_comments'),
     path('courses/<int:pk>/reviews/', CourseReviewsAPIView.as_view(), name='course_reviews'),
     path('platforms/', PlatformListAPIView.as_view(), name='platforms'),
+    path('user_courses/', UserCoursesAPIView.as_view(), name='user_courses'),
 ]
