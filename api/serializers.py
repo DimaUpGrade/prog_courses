@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Course, Comment, Review, Platform, Author, Tag, SearchWord
+from .models import Course, Comment, Review, Platform, Author, Tag, SearchWord, Report, NewsPost
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
@@ -145,3 +145,31 @@ class CreateCourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = ('title', 'description', 'link', 'cost')
+
+
+class ReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Report
+        fields = '__all__'
+
+
+class CreateReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Report
+        fields = ('header', 'report_text')
+
+        
+class NewsPostSerializer(serializers.ModelSerializer):
+    likes_count = serializers.IntegerField()
+    is_liked = serializers.BooleanField()
+    user = UserPartialSerializer(many=False, read_only=False)
+    
+    class Meta:
+        model = NewsPost
+        fields = ('header', 'post_text', 'user', 'creation_date', 'likes_count', 'is_liked')
+
+
+class CreateNewsPostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NewsPost
+        fields = ('header', 'post_text')

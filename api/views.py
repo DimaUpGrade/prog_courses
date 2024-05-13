@@ -15,7 +15,8 @@ from .models import (
     Platform, 
     Author, 
     Tag,
-    SearchWord
+    SearchWord,
+    NewsPost
 )
 from .serializers import (
     UserRegistrationSerializer, 
@@ -30,7 +31,8 @@ from .serializers import (
     CreateCourseSerializer,
     PlatformSerializer,
     UserCourseSerializer,
-    SearchResultsSerializer
+    SearchResultsSerializer,
+    NewsPostSerializer    
 )
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
@@ -457,4 +459,10 @@ class UserCoursesAPIView(APIView):
         response = self.paginate(user_courses)
         return response
         
-    
+
+class NewsPostViewset(viewsets.ModelViewSet):
+    serializer_class = NewsPostSerializer
+    queryset = NewsPost.objects.select_related('user')
+    create_serializer_class = CreateCourseSerializer
+    filter_backends = (DjangoFilterBackend, )
+

@@ -58,9 +58,7 @@ class Course(models.Model):
     cost = models.CharField(default="", max_length=20, blank=True, null=True)
     tags = models.ManyToManyField("Tag", related_name="course_tags")
     rating = models.FloatField(default=0)
-    # users = models.ForeignKey("UserCourse", related_name="course_users", on_delete=models.CASCADE)
     users = models.ManyToManyField("auth.User", related_name="course_users", blank=True)
-    # reviews = models.ManyToManyField("Review", related_name="course_reviews")
 
     def __str__(self):
         return self.title
@@ -76,13 +74,6 @@ class Review(models.Model):
 
     def __str__(self):
         return self.text_review
-    
-
-# class UserCourse(models.Model):
-#     # Затестить
-#     user = models.OneToOneField("auth.User", related_name="user_courses", on_delete=models.CASCADE)
-#     # user = models.ForeignKey("auth.User", related_name="user_courses", on_delete=models.CASCADE)
-#     courses = models.ManyToManyField("Course", related_name="course_users", blank=True)
 
 
 class Comment(models.Model):
@@ -96,10 +87,21 @@ class Comment(models.Model):
         return self.commentary_text
     
 
-class Reports(models.Model):
-    user = models.ForeignKey("auth.User", related_name="user_reports", on_delete=models.CASCADE)
+class Report(models.Model):
+    header = models.CharField(max_length=70)
+    report_text = models.TextField()
     creation_date = models.DateTimeField(auto_now_add=True)
-    report_text = models.TextField(null=True, blank=True)
+    
+    def __str__(self):
+        return self.header
 
 
-
+class NewsPost(models.Model):
+    header = models.CharField(max_length=70)
+    post_text = models.TextField()
+    likes = models.ManyToManyField("auth.User", blank=True, related_name="post_likes")
+    user = user = models.ForeignKey("auth.User", related_name="user_posts", on_delete=models.CASCADE)
+    creation_date = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.header
