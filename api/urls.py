@@ -7,7 +7,8 @@ router = DefaultRouter()
 router.register(r'courses', CourseViewSet, basename='course')
 router.register(r'reviews', ReviewViewSet, basename='review')
 router.register(r'comments', CommentViewSet, basename='comment')
-router.register(r'news_posts', NewsPostViewset, basename='newspost')
+router.register(r'news_posts', NewsPostViewSet, basename='newspost')
+router.register(r'tags', TagViewSet, basename='tag')
 
 # router.register(r'course_comments, CommentViewSet, basename='comment')
 

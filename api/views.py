@@ -32,7 +32,9 @@ from .serializers import (
     PlatformSerializer,
     UserCourseSerializer,
     SearchResultsSerializer,
-    NewsPostSerializer    
+    NewsPostSerializer,
+    CreateNewsPostSerializer,
+    TagSerializer
 )
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
@@ -42,8 +44,21 @@ import rest_framework.permissions as perms
 # from rest_framework_filters import filters as filters
 from django_filters.rest_framework import DjangoFilterBackend
 from .service import CourseFilter, ReviewsCourseFilter, CommentsCourseFilter
-from .search import SearchWordsConverter, pymorphy2_311_hotfix
+from .search import SearchWordsConverter
 
+
+def recalculate_rating(course):
+    reviews = list(course.reviews.all())
+    points = 0
+    count = len(reviews)
+    
+    for review in reviews:
+        points += review.rating
+
+    rating = round(points / count, 2)
+    course.rating = rating
+    course.save()
+    
 
 class UserRegistration(APIView):
     permission_classes = [perms.AllowAny]
@@ -76,9 +91,15 @@ class UserLogin(APIView):
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            user = serializer.check_user(request.data)
-            login(request, user)
-            return Response({'Token': Token.objects.get_or_create(user=user)[0].key}, status=status.HTTP_200_OK)
+            try:
+                user = serializer.check_user(request.data)
+            except:
+                return Response({"Bad request:": "User not found."}, status=status.HTTP_400_BAD_REQUEST)
+            
+                
+            if user:
+                login(request, user)
+                return Response({'Token': Token.objects.get_or_create(user=user)[0].key}, status=status.HTTP_200_OK)
         return Response({"Error:": "Something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -119,9 +140,30 @@ class CourseViewSet(viewsets.ModelViewSet):
             if request.GET.get('only_free'):
                 queryset = queryset.filter(paid=False)
 
+            if request.GET.get('tag'):
+                query_tags = request.GET.get('tag')
+                if ',' in query_tags:
+                    query_tags = query_tags.split(',')
+                    queryset = queryset.filter(tags__title__in=query_tags)
+                else:
+                    queryset = queryset.filter(tags__title__in=[query_tags])
+                # try:
+                #     search_tag = Tag.objects.get(title=request.GET.get('tag'))
+                #     queryset = queryset.filter(tags__in=search_tag)
+                # except Tag.DoesNotExist:
+                #     queryset = queryset.filter(tags__in=search_tag)
+            
             page = self.paginate_queryset(queryset)
             serializer = SearchResultsSerializer(page, many=True)
         else:
+            if request.GET.get('tag'):
+                query_tags = request.GET.get('tag')
+                if ',' in query_tags:
+                    query_tags = query_tags.split(',')
+                    queryset = queryset.filter(tags__title__in=query_tags)
+                else:
+                    queryset = queryset.filter(tags__title__in=[query_tags])
+                    
             page = self.paginate_queryset(queryset)
             serializer = self.get_serializer(page, many=True)
             
@@ -271,6 +313,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
             review.likes.remove(user)
         review.save()
         return Response(status=status.HTTP_200_OK)
+
     
     ###
     def create(self, request, *args, **kwargs):
@@ -299,7 +342,9 @@ class ReviewViewSet(viewsets.ModelViewSet):
                             rating = round(rating)
                             review = Review(id_course=course, text_review=text_review, user=user, rating=rating)
                             review.save()
-
+                            
+                            recalculate_rating(course)
+                            
                             response = Response("Review has been created", status=status.HTTP_201_CREATED)
                         else:
                             response = Response({'Bad Request': 'Invalid rating data'}, status=status.HTTP_400_BAD_REQUEST)
@@ -460,9 +505,21 @@ class UserCoursesAPIView(APIView):
         return response
         
 
-class NewsPostViewset(viewsets.ModelViewSet):
+class NewsPostViewSet(viewsets.ModelViewSet):
     serializer_class = NewsPostSerializer
-    queryset = NewsPost.objects.select_related('user')
-    create_serializer_class = CreateCourseSerializer
+    queryset = NewsPost.objects.select_related('user').order_by('-creation_date')
+    create_serializer_class = CreateNewsPostSerializer
     filter_backends = (DjangoFilterBackend, )
+
+
+class TagViewSet(viewsets.ModelViewSet):
+    serializer_class = TagSerializer
+    queryset = Tag.objects.all()
+    http_method_names = ['get']
+    filter_backends = (DjangoFilterBackend, )
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 

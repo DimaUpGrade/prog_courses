@@ -115,7 +115,7 @@ class SearchResultsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ('id', 'title', 'cost', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'search_words', 'sum_weight')
+        fields = ('id', 'title', 'cost', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'rating', 'search_words', 'sum_weight')
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -127,7 +127,7 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ('id', 'title', 'cost', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'in_favorite')
+        fields = ('id', 'title', 'cost', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'rating', 'in_favorite')
 
 
 class UserCourseSerializer(serializers.ModelSerializer):
@@ -138,7 +138,7 @@ class UserCourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ('id', 'title', 'paid', 'cost', 'author', 'platform', 'link', 'tags')
+        fields = ('id', 'title', 'paid', 'cost', 'author', 'platform', 'link', 'tags', 'rating')
 
 
 class CreateCourseSerializer(serializers.ModelSerializer):
@@ -160,13 +160,11 @@ class CreateReportSerializer(serializers.ModelSerializer):
 
         
 class NewsPostSerializer(serializers.ModelSerializer):
-    likes_count = serializers.IntegerField()
-    is_liked = serializers.BooleanField()
     user = UserPartialSerializer(many=False, read_only=False)
     
     class Meta:
         model = NewsPost
-        fields = ('header', 'post_text', 'user', 'creation_date', 'likes_count', 'is_liked')
+        fields = ('header', 'post_text', 'user', 'creation_date')
 
 
 class CreateNewsPostSerializer(serializers.ModelSerializer):

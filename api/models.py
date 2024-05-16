@@ -99,7 +99,6 @@ class Report(models.Model):
 class NewsPost(models.Model):
     header = models.CharField(max_length=70)
     post_text = models.TextField()
-    likes = models.ManyToManyField("auth.User", blank=True, related_name="post_likes")
     user = user = models.ForeignKey("auth.User", related_name="user_posts", on_delete=models.CASCADE)
     creation_date = models.DateTimeField(auto_now_add=True)
     
