@@ -9,6 +9,7 @@ router.register(r'reviews', ReviewViewSet, basename='review')
 router.register(r'comments', CommentViewSet, basename='comment')
 router.register(r'news_posts', NewsPostViewSet, basename='newspost')
 router.register(r'tags', TagViewSet, basename='tag')
+router.register(r'reports', ReportViewSet, basename='report')
 
 # router.register(r'course_comments, CommentViewSet, basename='comment')
 

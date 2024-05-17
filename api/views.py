@@ -1,7 +1,8 @@
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import AnonymousUser
 from django.shortcuts import render, get_object_or_404, get_list_or_404
-from django.db.models import Count, F, Q, ExpressionWrapper, Value, OuterRef, Case, When, Exists, Sum
+from django.db.models import Count, F, Q, ExpressionWrapper, Value, OuterRef, Case, When, Exists, Sum, CharField
+from django.db.models.functions import Lower
 from django.db import models
 from rest_framework.authtoken.models import Token
 import rest_framework.permissions as perms
@@ -16,7 +17,8 @@ from .models import (
     Author, 
     Tag,
     SearchWord,
-    NewsPost
+    NewsPost,
+    Report
 )
 from .serializers import (
     UserRegistrationSerializer, 
@@ -34,7 +36,9 @@ from .serializers import (
     SearchResultsSerializer,
     NewsPostSerializer,
     CreateNewsPostSerializer,
-    TagSerializer
+    TagSerializer,
+    ReportSerializer,
+    CreateReportSerializer
 )
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
@@ -46,6 +50,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .service import CourseFilter, ReviewsCourseFilter, CommentsCourseFilter
 from .search import SearchWordsConverter
 
+CharField.register_lookup(Lower)
 
 def recalculate_rating(course):
     reviews = list(course.reviews.all())
@@ -258,7 +263,7 @@ class CourseViewSet(viewsets.ModelViewSet):
                         author.save()
 
                     try:
-                        platform = Platform.objects.get(title=request.data["platform"])
+                        platform = Platform.objects.get(title__lower=request.data["platform"])
                     except Platform.DoesNotExist:
                         platform = Platform(title=request.data["platform"])
                         platform.save()                    
@@ -523,3 +528,15 @@ class TagViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
+class ReportViewSet(viewsets.ModelViewSet):
+    serializer_class = ReportSerializer
+    create_serializer_class = CreateReportSerializer
+    filter_backends = (DjangoFilterBackend, )
+    queryset = Report.objects.all()
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.create_serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)

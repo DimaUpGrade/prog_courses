@@ -171,3 +171,15 @@ class CreateNewsPostSerializer(serializers.ModelSerializer):
     class Meta:
         model = NewsPost
         fields = ('header', 'post_text')
+
+
+class ReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Report
+        fields = '__all__'
+
+
+class CreateReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Report
+        fields = ('header', 'report_text')
