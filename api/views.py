@@ -124,7 +124,7 @@ class PlatformListAPIView(generics.ListAPIView):
 
 class CourseViewSet(viewsets.ModelViewSet):
     # queryset = Course.objects.select_related('platform', 'author', 'publisher').prefetch_related('tags', 'search_words').annotate(sum_weight=Value(0, models.IntegerField()))
-    queryset = Course.objects.select_related('platform', 'author', 'publisher').prefetch_related('tags').annotate(in_favorite=Value(False, models.BooleanField()))
+    queryset = Course.objects.select_related('platform', 'author', 'publisher').prefetch_related('tags').annotate(in_favorite=Value(False, models.BooleanField())).filter(verified=True)
     serializer_class = CourseSerializer
     create_serializer_class = CreateCourseSerializer
     filter_backends = (DjangoFilterBackend, )
@@ -142,9 +142,6 @@ class CourseViewSet(viewsets.ModelViewSet):
             
             queryset = self.get_queryset().filter(search_words__title__in=search_words).annotate(sum_weight=Sum(F('search_words__weight'), filter=Q(search_words__title__in=search_words))).order_by('-sum_weight')
 
-            if request.GET.get('only_free'):
-                queryset = queryset.filter(paid=False)
-
             if request.GET.get('tag'):
                 query_tags = request.GET.get('tag')
                 if ',' in query_tags:
@@ -158,6 +155,10 @@ class CourseViewSet(viewsets.ModelViewSet):
                 # except Tag.DoesNotExist:
                 #     queryset = queryset.filter(tags__in=search_tag)
             
+            if request.GET.get('only_free'):
+                if request.GET.get('only_free') == 'true':
+                    queryset = queryset.filter(paid=False)
+            
             page = self.paginate_queryset(queryset)
             serializer = SearchResultsSerializer(page, many=True)
         else:
@@ -168,6 +169,10 @@ class CourseViewSet(viewsets.ModelViewSet):
                     queryset = queryset.filter(tags__title__in=query_tags)
                 else:
                     queryset = queryset.filter(tags__title__in=[query_tags])
+                    
+            if request.GET.get('only_free'):
+                if request.GET.get('only_free') == 'true':
+                    queryset = queryset.filter(paid=False)
                     
             page = self.paginate_queryset(queryset)
             serializer = self.get_serializer(page, many=True)
@@ -524,7 +529,7 @@ class TagViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend, )
     
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+        queryset = self.filter_queryset(self.get_queryset().order_by('title'))
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 

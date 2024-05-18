@@ -67,12 +67,12 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Put here netlify client host link
 CORS_ORIGIN_WHITELIST = (
-    'http://localhost:8080', 'http://192.168.0.102:8000', 'http://127.0.0.1:8000'
+    'http://localhost:8080', 'http://192.168.0.102:8000', 'http://127.0.0.1:8000', 'http://192.168.107.65:8080'
 )
 
 # Put here netlify client host link
 CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:8080', 'http://192.168.0.102:8080', 'http://127.0.0.1:8000'
+    'http://localhost:8080', 'http://192.168.0.102:8080', 'http://127.0.0.1:8000', 'http://192.168.107.65:8080'
 ]
 
 

@@ -56,7 +56,7 @@ class Course(models.Model):
     paid = models.BooleanField(default=False)
     verified = models.BooleanField(default=False)
     cost = models.CharField(default="", max_length=20, blank=True, null=True)
-    tags = models.ManyToManyField("Tag", related_name="course_tags")
+    tags = models.ManyToManyField("Tag", related_name="course_tags", blank=True)
     rating = models.FloatField(default=0)
     users = models.ManyToManyField("auth.User", related_name="course_users", blank=True)
 
