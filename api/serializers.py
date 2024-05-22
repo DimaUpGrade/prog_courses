@@ -115,7 +115,7 @@ class SearchResultsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ('id', 'title', 'cost', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'rating', 'search_words', 'sum_weight')
+        fields = ('id', 'title', 'price', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'rating', 'search_words', 'sum_weight')
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -127,7 +127,7 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ('id', 'title', 'cost', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'rating', 'in_favorite')
+        fields = ('id', 'title', 'price', 'description', 'author', 'platform', 'publisher', 'link', 'verified', 'tags', 'rating', 'in_favorite')
 
 
 class UserCourseSerializer(serializers.ModelSerializer):
@@ -138,13 +138,13 @@ class UserCourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ('id', 'title', 'paid', 'cost', 'author', 'platform', 'link', 'tags', 'rating')
+        fields = ('id', 'title', 'paid', 'price', 'author', 'platform', 'link', 'tags', 'rating')
 
 
 class CreateCourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
-        fields = ('title', 'description', 'link', 'cost')
+        fields = ('title', 'description', 'link', 'price')
 
 
 class ReportSerializer(serializers.ModelSerializer):

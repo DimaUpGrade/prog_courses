@@ -246,13 +246,13 @@ class CourseViewSet(viewsets.ModelViewSet):
                 title = serializer.data.get('title')
                 description = serializer.data.get('description')
                 link = serializer.data.get('link')
-                cost = serializer.data.get('cost')
+                price = serializer.data.get('price')
 
                 try:
                     course = Course.objects.get(link=link)
                     return Response({'Bad Request': 'This course is already exists!'}, status=status.HTTP_400_BAD_REQUEST)
                 except Course.DoesNotExist:
-                    if cost.lower() == "бесплатно":
+                    if price == 0:
                         paid = False
                     else:
                         paid = True
@@ -273,7 +273,7 @@ class CourseViewSet(viewsets.ModelViewSet):
                         platform = Platform(title=request.data["platform"])
                         platform.save()                    
 
-                    course = Course(title=title, description=description, link=link, cost=cost, paid=paid, author=author, platform=platform, publisher=user)
+                    course = Course(title=title, description=description, link=link, price=price, paid=paid, author=author, platform=platform, publisher=user)
                     course.save()
                     
                     search_words_obj = SearchWordsConverter(title)
